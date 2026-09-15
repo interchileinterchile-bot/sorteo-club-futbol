@@ -33,26 +33,26 @@ function doGet(e) {
     try {
       const token = e.parameter.token;
       const sorteo = e.parameter.sorteo;
-      return jsonResponse(getTicketsData(token, sorteo));
+      return apiResponse(e, getTicketsData(token, sorteo));
     } catch (err) {
-      return jsonResponse({ error: "No se pudieron leer los tickets: " + err.message });
+      return apiResponse(e, { error: "No se pudieron leer los tickets: " + err.message });
     }
   }
 
   if (action === "listSorteos" || action === "sorteos") {
     try {
       const token = e.parameter.token;
-      return jsonResponse(listSorteos(token));
+      return apiResponse(e, listSorteos(token));
     } catch (err) {
-      return jsonResponse({ error: "No se pudieron listar los sorteos: " + err.message });
+      return apiResponse(e, { error: "No se pudieron listar los sorteos: " + err.message });
     }
   }
 
   if (action === "listPremios") {
     try {
-      return jsonResponse(listPremios(e.parameter.nombre));
+      return apiResponse(e, listPremios(e.parameter.nombre));
     } catch (err) {
-      return jsonResponse({ error: "No se pudieron listar los premios: " + err.message });
+      return apiResponse(e, { error: "No se pudieron listar los premios: " + err.message });
     }
   }
 
@@ -61,35 +61,35 @@ function doGet(e) {
   // ser lenta e inestable; doGet responde directo y de forma mucho más confiable.
   if (action === "login") {
     try {
-      return jsonResponse(loginAdmin(e.parameter.password || ""));
+      return apiResponse(e, loginAdmin(e.parameter.password || ""));
     } catch (err) {
-      return jsonResponse({ success: false, error: "No se pudo leer la configuración de acceso: " + err.message });
+      return apiResponse(e, { success: false, error: "No se pudo leer la configuración de acceso: " + err.message });
     }
   }
 
   if (action === "updateTickets") {
     const tickets = JSON.parse(e.parameter.tickets || "[]");
-    return jsonResponse(updateTicketsData(tickets, e.parameter.token, e.parameter.sorteo));
+    return apiResponse(e, updateTicketsData(tickets, e.parameter.token, e.parameter.sorteo));
   }
 
   if (action === "createSorteo") {
-    return jsonResponse(createSorteo(e.parameter.nombre, e.parameter.cantidad, e.parameter.token, e.parameter.precio));
+    return apiResponse(e, createSorteo(e.parameter.nombre, e.parameter.cantidad, e.parameter.token, e.parameter.precio));
   }
 
   if (action === "deleteSorteo") {
-    return jsonResponse(deleteSorteo(e.parameter.nombre, e.parameter.token));
+    return apiResponse(e, deleteSorteo(e.parameter.nombre, e.parameter.token));
   }
 
   if (action === "setSorteoVisibility") {
-    return jsonResponse(setSorteoVisibility(e.parameter.nombre, e.parameter.visible === "true", e.parameter.token));
+    return apiResponse(e, setSorteoVisibility(e.parameter.nombre, e.parameter.visible === "true", e.parameter.token));
   }
 
   if (action === "setSorteoEstado") {
-    return jsonResponse(setSorteoEstado(e.parameter.nombre, e.parameter.estado, e.parameter.token));
+    return apiResponse(e, setSorteoEstado(e.parameter.nombre, e.parameter.estado, e.parameter.token));
   }
 
   if (action === "deletePremio") {
-    return jsonResponse(deletePremio(e.parameter.id, e.parameter.token));
+    return apiResponse(e, deletePremio(e.parameter.id, e.parameter.token));
   }
 
   // DE LO CONTRARIO, RENDERIZAR LA WEB APP NATIVA
@@ -154,6 +154,17 @@ function doPost(e) {
 function jsonResponse(data) {
   return ContentService.createTextOutput(JSON.stringify(data))
     .setMimeType(ContentService.MimeType.JSON);
+}
+
+/** Respuesta JSONP para el sitio en GitHub Pages, que no puede usar fetch
+ * de forma fiable tras las redirecciones CORS internas de Google. */
+function apiResponse(e, data) {
+  const callback = e && e.parameter && e.parameter.callback;
+  if (callback && /^[A-Za-z_$][0-9A-Za-z_$]*$/.test(callback)) {
+    return ContentService.createTextOutput(`${callback}(${JSON.stringify(data)});`)
+      .setMimeType(ContentService.MimeType.JAVASCRIPT);
+  }
+  return jsonResponse(data);
 }
 
 /**

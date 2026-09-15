@@ -33,6 +33,24 @@ function getApiUrl() {
 }
 
 /**
+ * Google Apps Script redirige sus respuestas a otro dominio. Desde GitHub
+ * Pages esa redirección a veces queda bloqueada por CORS; JSONP evita ese
+ * bloqueo porque el navegador carga la respuesta como un script.
+ */
+function apiGetJson(url) {
+  return new Promise((resolve, reject) => {
+    const callback = `raffleJsonp_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+    const script = document.createElement('script');
+    const cleanup = () => { delete window[callback]; script.remove(); };
+    const timeout = setTimeout(() => { cleanup(); reject(new Error('La API tardó demasiado en responder.')); }, 45000);
+    window[callback] = data => { clearTimeout(timeout); cleanup(); resolve(data); };
+    script.onerror = () => { clearTimeout(timeout); cleanup(); reject(new Error('No se pudo conectar con la API.')); };
+    script.src = `${url}${url.includes('?') ? '&' : '?'}callback=${callback}`;
+    document.head.appendChild(script);
+  });
+}
+
+/**
  * Guarda la URL de la API dinámicamente desde la interfaz
  */
 function setApiUrl(url) {
@@ -99,9 +117,7 @@ async function apiListSorteos(token = null) {
   try {
     let fetchUrl = `${url}?action=sorteos`;
     if (token) fetchUrl += `&token=${token}`;
-    const response = await fetch(fetchUrl);
-    if (!response.ok) throw new Error('Error en la respuesta del servidor.');
-    return await response.json();
+    return await apiGetJson(fetchUrl);
   } catch (error) {
     console.error('Error al listar sorteos:', error);
     throw error;
@@ -142,9 +158,7 @@ async function apiGetTickets(sorteo, adminToken = null) {
       fetchUrl += `&token=${adminToken}`;
     }
 
-    const response = await fetch(fetchUrl);
-    if (!response.ok) throw new Error('Error en la respuesta del servidor.');
-    return await response.json();
+    return await apiGetJson(fetchUrl);
   } catch (error) {
     console.error('Error al obtener tickets:', error);
     throw error;
@@ -163,9 +177,7 @@ async function apiLogin(password) {
 
   try {
     const fetchUrl = `${url}?action=login&password=${encodeURIComponent(password)}`;
-    const response = await fetch(fetchUrl);
-    if (!response.ok) throw new Error('Error en la red al iniciar sesión.');
-    return await response.json();
+    return await apiGetJson(fetchUrl);
   } catch (error) {
     console.error('Error de login:', error);
     throw error;
@@ -206,9 +218,7 @@ async function apiUpdateTickets(ticketsToUpdate, token, sorteo) {
 
   try {
     const fetchUrl = `${url}?action=updateTickets&token=${encodeURIComponent(token)}&sorteo=${encodeURIComponent(sorteo || '')}&tickets=${encodeURIComponent(JSON.stringify(ticketsToUpdate))}`;
-    const response = await fetch(fetchUrl);
-    if (!response.ok) throw new Error('Error de red al actualizar números.');
-    return await response.json();
+    return await apiGetJson(fetchUrl);
   } catch (error) {
     console.error('Error al actualizar números:', error);
     throw error;
@@ -239,9 +249,7 @@ async function apiCreateSorteo(nombre, cantidad, token, precio = 5000) {
 
   try {
     const fetchUrl = `${url}?action=createSorteo&nombre=${encodeURIComponent(nombre)}&cantidad=${encodeURIComponent(cantidad)}&precio=${encodeURIComponent(precio)}&token=${encodeURIComponent(token)}`;
-    const response = await fetch(fetchUrl);
-    if (!response.ok) throw new Error('Error de red al crear el sorteo.');
-    return await response.json();
+    return await apiGetJson(fetchUrl);
   } catch (error) {
     console.error('Error al crear sorteo:', error);
     throw error;
@@ -257,9 +265,7 @@ async function apiUploadPrizeImage(nombre, descripcion, imagen, token) {
 async function apiListPremios(nombre) {
   const url = getApiUrl();
   if (!url) return { premios: JSON.parse(localStorage.getItem(`rifa_mock_premios_${nombre}`) || '[]') };
-  const response = await fetch(`${url}?action=listPremios&nombre=${encodeURIComponent(nombre)}`);
-  if (!response.ok) throw new Error('No se pudieron cargar los premios.');
-  return response.json();
+  return apiGetJson(`${url}?action=listPremios&nombre=${encodeURIComponent(nombre)}`);
 }
 
 async function apiSavePremio(nombre, titulo, descripcion, imagen, token) {
@@ -279,9 +285,7 @@ async function apiSavePremio(nombre, titulo, descripcion, imagen, token) {
 async function apiDeletePremio(id, token) {
   const url = getApiUrl();
   if (!url) return { success: false, error: 'La eliminación de premios requiere la API configurada.' };
-  const response = await fetch(`${url}?action=deletePremio&id=${encodeURIComponent(id)}&token=${encodeURIComponent(token)}`);
-  if (!response.ok) throw new Error('No se pudo eliminar el premio.');
-  return response.json();
+  return apiGetJson(`${url}?action=deletePremio&id=${encodeURIComponent(id)}&token=${encodeURIComponent(token)}`);
 }
 
 /**
@@ -308,9 +312,7 @@ async function apiDeleteSorteo(nombre, token) {
 
   try {
     const fetchUrl = `${url}?action=deleteSorteo&nombre=${encodeURIComponent(nombre)}&token=${encodeURIComponent(token)}`;
-    const response = await fetch(fetchUrl);
-    if (!response.ok) throw new Error('Error de red al eliminar el sorteo.');
-    return await response.json();
+    return await apiGetJson(fetchUrl);
   } catch (error) {
     console.error('Error al eliminar sorteo:', error);
     throw error;
@@ -337,9 +339,7 @@ async function apiSetSorteoVisibility(nombre, visible, token) {
 
   try {
     const fetchUrl = `${url}?action=setSorteoVisibility&nombre=${encodeURIComponent(nombre)}&visible=${!!visible}&token=${encodeURIComponent(token)}`;
-    const response = await fetch(fetchUrl);
-    if (!response.ok) throw new Error('Error de red al cambiar la visibilidad.');
-    return await response.json();
+    return await apiGetJson(fetchUrl);
   } catch (error) {
     console.error('Error al cambiar visibilidad del sorteo:', error);
     throw error;
@@ -366,9 +366,7 @@ async function apiSetSorteoEstado(nombre, estado, token) {
 
   try {
     const fetchUrl = `${url}?action=setSorteoEstado&nombre=${encodeURIComponent(nombre)}&estado=${encodeURIComponent(estado)}&token=${encodeURIComponent(token)}`;
-    const response = await fetch(fetchUrl);
-    if (!response.ok) throw new Error('Error de red al cambiar el estado.');
-    return await response.json();
+    return await apiGetJson(fetchUrl);
   } catch (error) {
     console.error('Error al cambiar estado del sorteo:', error);
     throw error;
