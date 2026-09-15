@@ -77,7 +77,7 @@ async function renderPublicRaffles(raffles) {
     const [data, prizesResult] = await Promise.all([apiGetTickets(raffle.nombre), apiListPremios(raffle.nombre)]);
     const tickets = (data.tickets || []).map(t => `<span class="ticket ${String(t.estado).toLowerCase()}"><b>#${t.numero}</b><small>${t.estado}</small></span>`).join('');
     const premios = (prizesResult.premios || []).map(p => `<div class="public-prize">${p.imagen ? `<img src="${p.imagen}" alt="${p.titulo}">` : '<span>🏆</span>'}<div><b>Premio ${p.orden}: ${p.titulo}</b><small>${p.descripcion || ''}</small></div></div>`).join('');
-    const legacyPrize = raffle.imagen ? `<div class="public-prize"><img src="${raffle.imagen}" alt="Premio ${raffle.nombre}"><div><b>Premio principal</b><small>${raffle.descripcion || ''}</small></div></div>` : '';
+    const legacyPrize = (raffle.imagen || raffle.descripcion) ? `<div class="public-prize">${raffle.imagen ? `<img src="${raffle.imagen}" alt="Premio ${raffle.nombre}">` : '<span>🏆</span>'}<div><b>Premio principal</b><small>${raffle.descripcion || ''}</small></div></div>` : '';
     return `<article class="grid-container" style="margin-bottom:2rem"><h2>${raffle.nombre}</h2><p style="color:#c8d8f3">Participa y apoya al club.</p><p style="margin:1rem 0;color:#80b1ff;font-weight:800">Valor por número: ${formatCurrency(raffle.precio || 5000)}</p>${premios ? `<div class="public-prizes">${premios}</div>` : legacyPrize}<div class="tickets-grid">${tickets}</div></article>`;
   }));
   container.innerHTML = cards.join('') || '<p class="raffle-history-empty">No hay sorteos publicados.</p>';

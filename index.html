@@ -151,11 +151,14 @@
             <input type='number' id='new-sorteo-price' value='5000' min='500' step='500' required>
           </div>
         </div>
-        <div class='form-row'>
-          <div class='form-group'><label for='prize-title'>Premio 1</label><input id='prize-title' type='text' placeholder='Ej. Camiseta oficial firmada'></div>
-          <div class='form-group'><label for='prize-description'>Descripción</label><input id='prize-description' type='text' placeholder='Ej. Talla L, firmada por el plantel'></div>
-          <div class='form-group'><label for='prize-image'>Foto del premio</label><input id='prize-image' type='file' accept='image/*' capture='environment'></div>
+        <div id='create-prizes-list' class='create-prizes-list'>
+          <div class='form-row create-prize-row'>
+            <div class='form-group'><label>Premio 1</label><input class='create-prize-title' type='text' placeholder='Ej. Camiseta oficial firmada'></div>
+            <div class='form-group'><label>Descripción</label><input class='create-prize-description' type='text' placeholder='Ej. Talla L, firmada por el plantel'></div>
+            <div class='form-group'><label>Foto / cámara</label><input class='create-prize-image' type='file' accept='image/*' capture='environment'></div>
+          </div>
         </div>
+        <button type='button' class='btn-secondary add-prize-btn' onclick='addCreatePrizeRow()'>+ Agregar otro premio</button>
         <button type='submit' class='btn-primary'>Crear y abrir rifa</button>
       </form>
     </div>

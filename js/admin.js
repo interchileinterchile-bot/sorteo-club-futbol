@@ -378,9 +378,18 @@ async function handleCreateSorteo(e) {
   const nombre = nameInput.value.trim();
   const cantidad = parseInt(countInput.value);
   const precio = parseInt(priceInput.value);
+  const prizes = [...document.querySelectorAll('.create-prize-row')].map(row => ({
+    titulo: row.querySelector('.create-prize-title').value.trim(),
+    descripcion: row.querySelector('.create-prize-description').value.trim(),
+    image: row.querySelector('.create-prize-image').files[0]
+  })).filter(prize => prize.titulo || prize.descripcion || prize.image);
 
   if (!nombre) {
     alert('❌ Debes indicar un nombre para el nuevo sorteo.');
+    return;
+  }
+  if (prizes.some(prize => !prize.titulo)) {
+    alert('❌ Cada premio con descripción o foto debe tener un nombre.');
     return;
   }
 
@@ -390,20 +399,15 @@ async function handleCreateSorteo(e) {
   try {
     const result = await apiCreateSorteo(nombre, cantidad, token, precio);
     if (result.success) {
-      const image = document.getElementById('prize-image').files[0];
-      const tituloPremio = document.getElementById('prize-title').value.trim();
-      if (tituloPremio) {
-        const data = image ? await readImageAsDataUrl(image) : '';
-        const premio = await apiSavePremio(result.sorteo, tituloPremio, document.getElementById('prize-description').value.trim(), data, token);
+      for (const prize of prizes) {
+        const premio = await apiSavePremio(result.sorteo, prize.titulo, prize.descripcion, prize.image ? await readImageAsDataUrl(prize.image) : '', token);
         if (!premio.success) throw new Error(premio.error || 'No se pudo guardar el premio.');
       }
       alert(`⚽ ${result.message}`);
       nameInput.value = '';
       countInput.value = '100';
       priceInput.value = '5000';
-      document.getElementById('prize-title').value = '';
-      document.getElementById('prize-description').value = '';
-      document.getElementById('prize-image').value = '';
+      resetCreatePrizeRows();
       await refreshSorteosList();
       currentSorteo = result.sorteo;
       localStorage.setItem(CURRENT_SORTEO_KEY, currentSorteo);
@@ -418,6 +422,21 @@ async function handleCreateSorteo(e) {
   } finally {
     hideLoading();
   }
+}
+
+function addCreatePrizeRow() {
+  const list = document.getElementById('create-prizes-list');
+  const number = list.querySelectorAll('.create-prize-row').length + 1;
+  const row = document.createElement('div');
+  row.className = 'form-row create-prize-row';
+  row.innerHTML = `<div class="form-group"><label>Premio ${number}</label><input class="create-prize-title" type="text" placeholder="Ej. Segundo premio"></div><div class="form-group"><label>Descripción</label><input class="create-prize-description" type="text" placeholder="Detalles del premio"></div><div class="form-group"><label>Foto / cámara</label><input class="create-prize-image" type="file" accept="image/*" capture="environment"></div><button type="button" class="remove-create-prize" aria-label="Quitar premio">×</button>`;
+  row.querySelector('.remove-create-prize').addEventListener('click', () => row.remove());
+  list.appendChild(row);
+}
+
+function resetCreatePrizeRows() {
+  const list = document.getElementById('create-prizes-list');
+  list.innerHTML = `<div class="form-row create-prize-row"><div class="form-group"><label>Premio 1</label><input class="create-prize-title" type="text" placeholder="Ej. Camiseta oficial firmada"></div><div class="form-group"><label>Descripción</label><input class="create-prize-description" type="text" placeholder="Ej. Talla L, firmada por el plantel"></div><div class="form-group"><label>Foto / cámara</label><input class="create-prize-image" type="file" accept="image/*" capture="environment"></div></div>`;
 }
 
 /**
