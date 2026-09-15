@@ -1,0 +1,622 @@
+/**
+ * Módulo de Administración, Login y Contabilidad
+ */
+
+/**
+ * Retorna el token de administrador guardado en la sesión
+ */
+function getAdminToken() {
+  return sessionStorage.getItem('rifa_admin_token');
+}
+
+/**
+ * Retorna si el administrador ha iniciado sesión
+ */
+function isAdminLoggedIn() {
+  return !!getAdminToken();
+}
+
+/**
+ * Verifica la sesión de administrador y ajusta la interfaz de usuario
+ */
+function checkAdminSession() {
+  const loggedIn = isAdminLoggedIn();
+
+  const loginCard = document.getElementById('login-card-container');
+  const sessionContainer = document.getElementById('admin-session-container');
+  const accountingTab = document.getElementById('nav-accounting-tab');
+  const adminOnlyUis = document.querySelectorAll('.admin-only-ui');
+  const scoreboard = document.getElementById('scoreboard-container');
+
+  if (loggedIn) {
+    if (loginCard) loginCard.style.display = 'none';
+    if (sessionContainer) sessionContainer.style.display = 'block';
+    if (accountingTab) accountingTab.style.display = 'flex';
+    if (scoreboard) scoreboard.style.display = '';
+    adminOnlyUis.forEach(ui => ui.style.display = 'flex');
+  } else {
+    if (loginCard) loginCard.style.display = 'block';
+    if (sessionContainer) sessionContainer.style.display = 'none';
+    if (accountingTab) accountingTab.style.display = 'none';
+    if (scoreboard) scoreboard.style.display = 'none';
+    adminOnlyUis.forEach(ui => ui.style.display = 'none');
+  }
+}
+
+/**
+ * Maneja el inicio de sesión
+ */
+async function handleLogin(e) {
+  e.preventDefault();
+  const passwordInput = document.getElementById('admin-password');
+  const password = passwordInput.value;
+  const submitButton = e.currentTarget.querySelector('button[type="submit"]');
+  const originalLabel = submitButton ? submitButton.innerHTML : '';
+
+  if (submitButton) {
+    submitButton.disabled = true;
+    submitButton.classList.add('is-loading');
+    submitButton.innerHTML = '<span class="button-spinner" aria-hidden="true"></span> Validando acceso…';
+  }
+  
+  try {
+    const response = await apiLogin(password);
+    if (response.success) {
+      sessionStorage.setItem('rifa_admin_token', response.token);
+      passwordInput.value = '';
+      checkAdminSession();
+      await refreshSorteosList();
+      await refreshRaffleData();
+      switchTab('public-view');
+      alert('⚽ ¡Acceso Autorizado! Bienvenido a la cancha técnica del sorteo.');
+    } else {
+      alert('❌ Contraseña incorrecta. Inténtalo de nuevo.');
+    }
+  } catch (err) {
+    const detail = err && err.message ? `\n\nDetalle: ${err.message}` : '';
+    alert('No se pudo conectar con la API del sorteo.\n\nVerifica que la implementación de Google Apps Script esté activa y con acceso para "Cualquiera".' + detail);
+    console.error(err);
+  } finally {
+    if (submitButton) {
+      submitButton.disabled = false;
+      submitButton.classList.remove('is-loading');
+      submitButton.innerHTML = originalLabel;
+    }
+  }
+}
+
+/**
+ * Cierra la sesión administrativa
+ */
+function handleLogout() {
+  sessionStorage.removeItem('rifa_admin_token');
+  clearSelection();
+  checkAdminSession();
+  refreshRaffleData();
+  switchTab('public-view');
+  alert('🚪 Has salido del modo de administración de forma segura.');
+}
+
+/**
+ * Alterna la selección de un número en la grilla (Modo Admin)
+ */
+function toggleNumberSelection(number, element) {
+  const numInt = parseInt(number);
+  const idx = selectedNumbers.indexOf(numInt);
+  
+  if (idx === -1) {
+    selectedNumbers.push(numInt);
+    element.classList.add('selected');
+  } else {
+    selectedNumbers.splice(idx, 1);
+    element.classList.remove('selected');
+  }
+  
+  updateTacticsBar();
+}
+
+/**
+ * Actualiza la visibilidad y contador de la barra flotante de acciones rápidas
+ */
+function updateTacticsBar() {
+  const bar = document.getElementById('tactics-bar-container');
+  const countEl = document.getElementById('tactics-count');
+  
+  if (selectedNumbers.length > 0) {
+    countEl.innerText = selectedNumbers.length;
+    bar.classList.add('active');
+  } else {
+    bar.classList.remove('active');
+  }
+}
+
+/**
+ * Limpia toda la selección de números y esconde la barra flotante
+ */
+function clearSelection() {
+  selectedNumbers = [];
+  const selectedEls = document.querySelectorAll('.ticket.selected');
+  selectedEls.forEach(el => el.classList.remove('selected'));
+  updateTacticsBar();
+}
+
+/**
+ * Abre el formulario para registrar un comprador a los números seleccionados
+ */
+function openMultiSelectModal() {
+  const modal = document.getElementById('ticket-modal');
+  const descEl = document.getElementById('modal-selected-nums-desc');
+  const titleEl = document.getElementById('modal-ticket-title');
+  
+  if (selectedNumbers.length === 0) return;
+  
+  // Ordenar números seleccionados numéricamente
+  selectedNumbers.sort((a, b) => a - b);
+  
+  // Título e indicador de números
+  titleEl.innerText = selectedNumbers.length === 1 ? 'Registrar Dorsal' : 'Asignar Lote de Dorsales';
+  descEl.innerText = `Camiseta(s) seleccionada(s): ${selectedNumbers.join(', ')}`;
+  
+  // Limpiar campos por defecto
+  const nameInput = document.getElementById('buyer-name');
+  const phoneInput = document.getElementById('buyer-phone');
+  const statusSelect = document.getElementById('ticket-status');
+  const paymentSelect = document.getElementById('payment-method');
+  
+  nameInput.value = '';
+  phoneInput.value = '';
+  statusSelect.value = 'Reservado';
+  paymentSelect.value = 'Transferencia';
+  
+  // Si es un solo número seleccionado, precargar datos existentes si los tiene
+  if (selectedNumbers.length === 1) {
+    const ticketNum = selectedNumbers[0];
+    const ticketData = ticketsData.find(t => t.numero === ticketNum);
+    
+    if (ticketData && ticketData.estado !== 'Disponible') {
+      nameInput.value = ticketData.nombre || '';
+      phoneInput.value = ticketData.telefono || '';
+      statusSelect.value = ticketData.estado || 'Reservado';
+      paymentSelect.value = ticketData.medioPago || 'Transferencia';
+    }
+  }
+  
+  togglePaymentFields();
+  modal.classList.add('active');
+}
+
+/**
+ * Cierra el formulario modal
+ */
+function closeModal() {
+  document.getElementById('ticket-modal').classList.remove('active');
+}
+
+/**
+ * Activa/Desactiva campos según el estado seleccionado (ej: ocultar método de pago si es disponible)
+ */
+function togglePaymentFields() {
+  const status = document.getElementById('ticket-status').value;
+  const paymentContainer = document.getElementById('payment-method-container');
+  const nameInput = document.getElementById('buyer-name');
+  const phoneInput = document.getElementById('buyer-phone');
+  const paymentSelect = document.getElementById('payment-method');
+  
+  if (status === 'Disponible') {
+    // Si se libera, los datos no son requeridos
+    nameInput.required = false;
+    phoneInput.required = false;
+    nameInput.disabled = true;
+    phoneInput.disabled = true;
+    paymentContainer.style.display = 'none';
+  } else {
+    nameInput.required = true;
+    phoneInput.required = true;
+    nameInput.disabled = false;
+    phoneInput.disabled = false;
+    
+    if (status === 'Pagado') {
+      paymentContainer.style.display = 'block';
+      paymentSelect.required = true;
+    } else {
+      // Si está reservado, el medio de pago puede ser opcional
+      paymentContainer.style.display = 'block';
+      paymentSelect.required = false;
+    }
+  }
+}
+
+/**
+ * Guarda los datos de los números ingresados en el formulario (Admin)
+ */
+async function saveTicketData(e) {
+  e.preventDefault();
+  
+  const estado = document.getElementById('ticket-status').value;
+  const nombre = document.getElementById('buyer-name').value;
+  const telefono = document.getElementById('buyer-phone').value;
+  const medioPago = estado === 'Pagado' ? document.getElementById('payment-method').value : '';
+  
+  // Crear array de actualizaciones para la API
+  const ticketsToUpdate = selectedNumbers.map(num => ({
+    numero: num,
+    estado: estado,
+    nombre: estado === 'Disponible' ? '' : nombre,
+    telefono: estado === 'Disponible' ? '' : telefono,
+    medioPago: estado === 'Disponible' ? '' : medioPago
+  }));
+  
+  const token = getAdminToken();
+  showLoading();
+
+  try {
+    const result = await apiUpdateTickets(ticketsToUpdate, token, currentSorteo);
+    if (result.success) {
+      alert(`🎉 ¡Datos guardados correctamente!
+
+${result.message || 'Se actualizaron los dorsales seleccionados.'}`);
+      closeModal();
+      clearSelection();
+      await refreshRaffleData();
+    } else {
+      alert('❌ Error al actualizar: ' + result.error);
+    }
+  } catch (error) {
+    alert('Ocurrió un error al enviar los datos al servidor.');
+    console.error(error);
+  } finally {
+    hideLoading();
+  }
+}
+
+/**
+ * Renderiza la pestaña de contabilidad completa
+ */
+function renderAccountingTable() {
+  const tableBody = document.getElementById('accounting-table-body');
+  const searchInput = document.getElementById('accounting-search');
+  if (!tableBody) return;
+  
+  tableBody.innerHTML = '';
+  
+  // Variables de cálculo contable
+  let efectivoRecaudado = 0;
+  let transferenciaRecaudado = 0;
+  let pendienteCobro = 0; // Total reservados
+  
+  // Obtener texto de búsqueda
+  const searchQuery = searchInput ? searchInput.value.toLowerCase().trim() : '';
+  
+  ticketsData.forEach(t => {
+    // Cálculos financieros
+    if (t.estado === 'Pagado') {
+      if (t.medioPago === 'Efectivo') {
+        efectivoRecaudado += TICKET_PRICE;
+      } else {
+        // Por defecto transferencia si no dice efectivo o está marcado transferencia
+        transferenciaRecaudado += TICKET_PRICE;
+      }
+    } else if (t.estado === 'Reservado') {
+      pendienteCobro += TICKET_PRICE;
+    }
+    
+    // Filtrado por buscador
+    const numeroStr = t.numero.toString();
+    const nombreStr = (t.nombre || '').toLowerCase();
+    const telefonoStr = (t.telefono || '').toLowerCase();
+    
+    const matchSearch = searchQuery === '' || 
+                        numeroStr.includes(searchQuery) || 
+                        nombreStr.includes(searchQuery) || 
+                        telefonoStr.includes(searchQuery);
+    
+    if (matchSearch) {
+      const row = document.createElement('tr');
+      
+      const formattedDate = t.fecha ? formatDateString(t.fecha) : '-';
+      
+      row.innerHTML = `
+        <td style='font-weight: bold; text-align: center; color: var(--color-accent-blue);'>#${t.numero}</td>
+        <td><span class='badge-status ${t.estado.toLowerCase()}'>${t.estado}</span></td>
+        <td style='font-weight: 600;'>${t.nombre || '-'}</td>
+        <td>${t.telefono || '-'}</td>
+        <td>${t.estado === 'Pagado' ? t.medioPago : t.estado === 'Reservado' ? '<em style="color: #8b949e;">(Por pagar)</em>' : '-'}</td>
+        <td style='color: #8b949e; font-size: 0.8rem;'>${formattedDate}</td>
+      `;
+      
+      tableBody.appendChild(row);
+    }
+  });
+  
+  // Renderizar tarjetas contables
+  document.getElementById('calc-efectivo').innerText = formatCurrency(efectivoRecaudado);
+  document.getElementById('calc-transferencia').innerText = formatCurrency(transferenciaRecaudado);
+  document.getElementById('calc-pendiente').innerText = formatCurrency(pendienteCobro);
+  document.getElementById('calc-potencial').innerText = formatCurrency(efectivoRecaudado + transferenciaRecaudado + pendienteCobro);
+  
+  // Agregar listener para búsqueda si no se ha agregado antes
+  if (searchInput && !searchInput.dataset.hasListener) {
+    searchInput.addEventListener('input', () => {
+      renderAccountingTable();
+    });
+    searchInput.dataset.hasListener = 'true';
+  }
+}
+
+/**
+ * Formatea cadenas ISO de fecha a formato legible (DD/MM/AAAA HH:MM)
+ */
+function formatDateString(isoString) {
+  try {
+    const d = new Date(isoString);
+    if (isNaN(d.getTime())) return isoString; // Si no es fecha válida, retornar string original
+    const day = padZero(d.getDate());
+    const month = padZero(d.getMonth() + 1);
+    const year = d.getFullYear();
+    const hours = padZero(d.getHours());
+    const minutes = padZero(d.getMinutes());
+    return `${day}/${month}/${year} ${hours}:${minutes}`;
+  } catch (e) {
+    return isoString;
+  }
+}
+
+/* --- GESTIÓN DE SORTEOS (MÚLTIPLES SORTEOS EN LA MISMA HOJA) --- */
+
+/**
+ * Crea un nuevo sorteo desde el formulario de administración
+ */
+async function handleCreateSorteo(e) {
+  e.preventDefault();
+
+  const nameInput = document.getElementById('new-sorteo-name');
+  const countInput = document.getElementById('new-sorteo-count');
+  const nombre = nameInput.value.trim();
+  const cantidad = parseInt(countInput.value);
+
+  if (!nombre) {
+    alert('❌ Debes indicar un nombre para el nuevo sorteo.');
+    return;
+  }
+
+  const token = getAdminToken();
+  showLoading();
+
+  try {
+    const result = await apiCreateSorteo(nombre, cantidad, token);
+    if (result.success) {
+      alert(`⚽ ${result.message}`);
+      nameInput.value = '';
+      countInput.value = '100';
+      await refreshSorteosList();
+      currentSorteo = result.sorteo;
+      localStorage.setItem(CURRENT_SORTEO_KEY, currentSorteo);
+      renderSorteoSelector();
+      await refreshRaffleData();
+    } else {
+      alert('❌ Error al crear el sorteo: ' + result.error);
+    }
+  } catch (error) {
+    alert('Ocurrió un error al crear el sorteo.');
+    console.error(error);
+  } finally {
+    hideLoading();
+  }
+}
+
+/**
+ * Elimina un sorteo (Admin). Si no se indica nombre, elimina el sorteo activo.
+ */
+async function handleDeleteSorteo(nombre) {
+  const target = nombre || currentSorteo;
+  if (!target) return;
+
+  const confirmDelete = confirm(`¿Seguro que quieres eliminar el sorteo "${target}"? Esta acción no se puede deshacer.`);
+  if (!confirmDelete) return;
+
+  const token = getAdminToken();
+  showLoading();
+
+  try {
+    const result = await apiDeleteSorteo(target, token);
+    if (result.success) {
+      alert(`🗑️ ${result.message}`);
+      if (target === currentSorteo) localStorage.removeItem(CURRENT_SORTEO_KEY);
+      await refreshSorteosList();
+      await refreshRaffleData();
+    } else {
+      alert('❌ Error al eliminar el sorteo: ' + result.error);
+    }
+  } catch (error) {
+    alert('Ocurrió un error al eliminar el sorteo.');
+    console.error(error);
+  } finally {
+    hideLoading();
+  }
+}
+
+/**
+ * Renderiza la tabla de gestión de sorteos (solo Admin): estado, visibilidad y acciones
+ */
+function renderSorteoManagement() {
+  const tbody = document.getElementById('sorteo-management-body');
+  if (!tbody) return;
+
+  tbody.innerHTML = '';
+
+  sorteosDetalle.forEach(s => {
+    const row = document.createElement('tr');
+    const esActivo = s.nombre === currentSorteo;
+
+    row.innerHTML = `
+      <td style='font-weight: 600;'>${s.nombre}${esActivo ? " <span style='color: var(--color-grass-neon); font-size: 0.75rem;'>(viendo)</span>" : ''}</td>
+      <td><span class='badge-status ${s.estado === 'Terminada' ? 'pagado' : 'disponible'}'>${s.estado}</span></td>
+      <td>${s.visible ? '👁️ Visible' : '🚫 Oculto'}</td>
+      <td style='display: flex; gap: 0.4rem; flex-wrap: wrap;'>
+        <button type='button' class='btn-secondary' style='font-size: 0.7rem; padding: 0.4rem 0.6rem; margin-top:0;' onclick='handleViewSorteoFromTable("${s.nombre}")'>Ver</button>
+        <button type='button' class='btn-secondary' style='font-size: 0.7rem; padding: 0.4rem 0.6rem; margin-top:0;' onclick='handleToggleVisibility("${s.nombre}", ${s.visible})'>${s.visible ? 'Ocultar' : 'Mostrar'}</button>
+        <button type='button' class='btn-secondary' style='font-size: 0.7rem; padding: 0.4rem 0.6rem; margin-top:0;' onclick='handleToggleEstado("${s.nombre}", "${s.estado}")'>${s.estado === 'Terminada' ? 'Reactivar' : 'Marcar Terminada'}</button>
+        <button type='button' class='btn-secondary btn-danger' style='font-size: 0.7rem; padding: 0.4rem 0.6rem; margin-top:0;' onclick='handleDeleteSorteo("${s.nombre}")'>Eliminar</button>
+      </td>
+    `;
+
+    tbody.appendChild(row);
+  });
+}
+
+/**
+ * Cambia el sorteo activo desde la tabla de gestión
+ */
+async function handleViewSorteoFromTable(nombre) {
+  currentSorteo = nombre;
+  localStorage.setItem(CURRENT_SORTEO_KEY, currentSorteo);
+  renderSorteoSelector();
+  renderSorteoManagement();
+  clearSelection();
+  await refreshRaffleData();
+}
+
+/**
+ * Alterna si un sorteo es visible para el modo espectador (público)
+ */
+async function handleToggleVisibility(nombre, visibleActual) {
+  const token = getAdminToken();
+  showLoading();
+
+  try {
+    const result = await apiSetSorteoVisibility(nombre, !visibleActual, token);
+    if (result.success) {
+      await refreshSorteosList();
+    } else {
+      alert('❌ ' + result.error);
+    }
+  } catch (error) {
+    alert('Ocurrió un error al cambiar la visibilidad del sorteo.');
+    console.error(error);
+  } finally {
+    hideLoading();
+  }
+}
+
+/**
+ * Alterna el estado de un sorteo entre Activo y Terminada
+ */
+async function handleToggleEstado(nombre, estadoActual) {
+  const nuevoEstado = estadoActual === 'Terminada' ? 'Activo' : 'Terminada';
+  const token = getAdminToken();
+  showLoading();
+
+  try {
+    const result = await apiSetSorteoEstado(nombre, nuevoEstado, token);
+    if (result.success) {
+      await refreshSorteosList();
+    } else {
+      alert('❌ ' + result.error);
+    }
+  } catch (error) {
+    alert('Ocurrió un error al cambiar el estado del sorteo.');
+    console.error(error);
+  } finally {
+    hideLoading();
+  }
+}
+
+/* --- SELECCIÓN ALEATORIA Y SORTEO DE GANADORES --- */
+
+/**
+ * Selecciona al azar N números "Disponibles" del sorteo activo, como si el admin
+ * los hubiera hecho clic manualmente (quedan listos para "Asignar Comprador")
+ */
+function handlePickRandomNumbers() {
+  const input = document.getElementById('random-pick-count');
+  const cantidad = parseInt(input.value);
+
+  if (!cantidad || cantidad < 1) {
+    alert('❌ Indica una cantidad válida de números a elegir al azar.');
+    return;
+  }
+
+  const disponibles = ticketsData.filter(t => t.estado === 'Disponible' && !selectedNumbers.includes(t.numero));
+
+  if (disponibles.length === 0) {
+    alert('⚠️ No quedan números disponibles para elegir al azar.');
+    return;
+  }
+
+  if (cantidad > disponibles.length) {
+    alert(`⚠️ Solo quedan ${disponibles.length} número(s) disponible(s). Se seleccionarán todos.`);
+  }
+
+  // Barajar (Fisher-Yates) y tomar los primeros N
+  const barajados = [...disponibles];
+  for (let i = barajados.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [barajados[i], barajados[j]] = [barajados[j], barajados[i]];
+  }
+  const elegidos = barajados.slice(0, cantidad);
+
+  elegidos.forEach(t => {
+    const el = document.querySelector(`.ticket[data-numero='${t.numero}']`);
+    if (el) toggleNumberSelection(t.numero, el);
+  });
+
+  alert(`🎲 Se seleccionaron al azar: ${elegidos.map(t => '#' + t.numero).join(', ')}. Ahora puedes asignarles un comprador.`);
+}
+
+/**
+ * Sortea al azar N ganadores entre los números marcados como "Pagado" del sorteo activo
+ */
+function handleDrawWinners() {
+  const input = document.getElementById('winners-count');
+  const cantidad = parseInt(input.value);
+
+  if (!cantidad || cantidad < 1) {
+    alert('❌ Indica cuántos ganadores debe elegir el sorteo.');
+    return;
+  }
+
+  const elegibles = ticketsData.filter(t => t.estado === 'Pagado');
+
+  if (elegibles.length === 0) {
+    alert('⚠️ Todavía no hay números pagados. Solo los dorsales "Pagado" (Gol!) pueden participar del sorteo del ganador.');
+    return;
+  }
+
+  if (cantidad > elegibles.length) {
+    alert(`❌ Solo hay ${elegibles.length} número(s) pagado(s) en juego. Reduce la cantidad de ganadores.`);
+    return;
+  }
+
+  const confirmDraw = confirm(`¿Tirar la rifa y elegir ${cantidad} ganador(es) al azar entre los ${elegibles.length} números pagados de "${currentSorteo}"?`);
+  if (!confirmDraw) return;
+
+  // Barajar (Fisher-Yates) y tomar los primeros N
+  const barajados = [...elegibles];
+  for (let i = barajados.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [barajados[i], barajados[j]] = [barajados[j], barajados[i]];
+  }
+  const ganadores = barajados.slice(0, cantidad);
+
+  renderWinnersResult(ganadores);
+}
+
+/**
+ * Muestra el resultado del sorteo de ganadores en pantalla
+ */
+function renderWinnersResult(ganadores) {
+  const container = document.getElementById('winners-result');
+  if (!container) {
+    const lista = ganadores.map((g, i) => `${i + 1}. Dorsal #${g.numero} — ${g.nombre || 'Sin nombre'} (${g.telefono || 'Sin teléfono'})`).join('\n');
+    alert(`🏆 ¡GANADOR(ES) DEL SORTEO "${currentSorteo}"!\n\n${lista}`);
+    return;
+  }
+
+  container.innerHTML = `
+    <h4 style='margin-bottom: 0.8rem;'>🏆 Ganador(es) de "${currentSorteo}"</h4>
+    <ol style='padding-left: 1.2rem; display: flex; flex-direction: column; gap: 0.5rem;'>
+      ${ganadores.map(g => `<li><strong>Dorsal #${g.numero}</strong> — ${g.nombre || 'Sin nombre'} (${g.telefono || 'Sin teléfono'})</li>`).join('')}
+    </ol>
+  `;
+  container.style.display = 'block';
+}

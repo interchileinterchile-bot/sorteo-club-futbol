@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="320" viewBox="0 0 1200 320" preserveAspectRatio="xMidYMax slice">
+  <g fill="#ffffff">
+    <!-- Niño 1: corriendo con los brazos abiertos -->
+    <g transform="translate(140,150)">
+      <circle cx="0" cy="-92" r="20"/>
+      <path d="M -16,-72 Q 0,-46 16,-72 L 24,-14 Q 10,2 0,-6 Q -10,2 -24,-14 Z"/>
+      <path d="M -24,-14 L -60,18 L -50,30 L -14,0 Z"/>
+      <path d="M 24,-14 L 56,4 L 64,-8 L 30,-26 Z"/>
+      <path d="M -10,-4 L -26,56 L -10,60 L 4,4 Z"/>
+      <path d="M 8,-2 L 34,44 L 48,38 L 22,-10 Z"/>
+    </g>
+
+    <!-- Niño 2: pateando la pelota -->
+    <g transform="translate(470,168)">
+      <circle cx="0" cy="-88" r="19"/>
+      <path d="M -15,-68 Q 0,-44 15,-68 L 20,-10 Q 6,4 -6,-2 Q -16,4 -26,-8 Z"/>
+      <path d="M -26,-8 L -46,38 L -32,44 L -6,0 Z"/>
+      <path d="M 20,-10 L 44,-2 L 48,-14 L 22,-24 Z"/>
+      <path d="M -12,-2 L -30,52 L -16,56 L 2,0 Z"/>
+      <path d="M -2,0 L 36,16 L 42,4 L 6,-14 Z"/>
+      <circle cx="52" cy="20" r="14"/>
+    </g>
+
+    <!-- Niño 3: saltando de alegría -->
+    <g transform="translate(800,140)">
+      <circle cx="0" cy="-90" r="19"/>
+      <path d="M -15,-70 Q 0,-46 15,-70 L 17,-20 Q 6,-8 -6,-14 Q -17,-6 -28,-16 Z"/>
+      <path d="M -28,-16 L -50,-2 L -44,12 L -14,-8 Z"/>
+      <path d="M 17,-20 L 42,-4 L 36,10 L 8,-12 Z"/>
+      <path d="M -12,-14 L -34,30 L -20,36 L -2,-6 Z"/>
+      <path d="M 0,-12 L 22,30 L 36,24 L 12,-16 Z"/>
+    </g>
+
+    <!-- Niño 4: de espaldas dominando el balón -->
+    <g transform="translate(1080,166)">
+      <circle cx="0" cy="-86" r="17"/>
+      <path d="M -13,-66 Q 0,-44 13,-66 L 17,-12 Q 6,-2 -6,-4 Q -17,0 -19,-10 Z"/>
+      <path d="M -19,-10 L -40,26 L -28,32 L -6,-4 Z"/>
+      <path d="M 17,-12 L 38,22 L 26,28 L 6,-4 Z"/>
+      <path d="M -8,-4 L -18,48 L -6,52 L 4,-2 Z"/>
+      <path d="M 0,-2 L 8,48 L 20,46 L 14,-4 Z"/>
+      <circle cx="-2" cy="58" r="15"/>
+    </g>
+  </g>
+</svg>

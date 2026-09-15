@@ -1,0 +1,142 @@
+<script>
+/**
+ * Conexión nativa con el servidor de Google Apps Script usando google.script.run.
+ * Envolvemos las funciones nativas en Promesas para mantener compatibilidad con "await".
+ */
+
+/**
+ * Lista los sorteos disponibles. En modo Admin retorna metadatos completos.
+ */
+async function apiListSorteos(token = null) {
+  return new Promise((resolve, reject) => {
+    google.script.run
+      .withSuccessHandler((response) => {
+        resolve(response);
+      })
+      .withFailureHandler((error) => {
+        console.error("Error al listar sorteos desde Apps Script:", error);
+        reject(error);
+      })
+      .listSorteos(token);
+  });
+}
+
+/**
+ * Obtener la lista de números (Público o Admin) de un sorteo específico
+ */
+async function apiGetTickets(sorteo, adminToken = null) {
+  return new Promise((resolve, reject) => {
+    google.script.run
+      .withSuccessHandler((response) => {
+        resolve(response);
+      })
+      .withFailureHandler((error) => {
+        console.error("Error al obtener tickets desde Apps Script:", error);
+        reject(error);
+      })
+      .getTicketsData(adminToken, sorteo);
+  });
+}
+
+/**
+ * Autenticación de Administrador en el servidor
+ */
+async function apiLogin(password) {
+  return new Promise((resolve, reject) => {
+    google.script.run
+      .withSuccessHandler((response) => {
+        resolve(response);
+      })
+      .withFailureHandler((error) => {
+        console.error("Error de login en Apps Script:", error);
+        reject(error);
+      })
+      .loginAdmin(password);
+  });
+}
+
+/**
+ * Actualizar estados de números en Google Sheets desde el lote seleccionado
+ */
+async function apiUpdateTickets(ticketsToUpdate, token, sorteo) {
+  return new Promise((resolve, reject) => {
+    google.script.run
+      .withSuccessHandler((response) => {
+        resolve(response);
+      })
+      .withFailureHandler((error) => {
+        console.error("Error de actualización en Apps Script:", error);
+        reject(error);
+      })
+      .updateTicketsData(ticketsToUpdate, token, sorteo);
+  });
+}
+
+/**
+ * Crea un nuevo sorteo (Admin)
+ */
+async function apiCreateSorteo(nombre, cantidad, token) {
+  return new Promise((resolve, reject) => {
+    google.script.run
+      .withSuccessHandler((response) => {
+        resolve(response);
+      })
+      .withFailureHandler((error) => {
+        console.error("Error al crear sorteo en Apps Script:", error);
+        reject(error);
+      })
+      .createSorteo(nombre, cantidad, token);
+  });
+}
+
+/**
+ * Elimina un sorteo existente (Admin)
+ */
+async function apiDeleteSorteo(nombre, token) {
+  return new Promise((resolve, reject) => {
+    google.script.run
+      .withSuccessHandler((response) => {
+        resolve(response);
+      })
+      .withFailureHandler((error) => {
+        console.error("Error al eliminar sorteo en Apps Script:", error);
+        reject(error);
+      })
+      .deleteSorteo(nombre, token);
+  });
+}
+
+/**
+ * Cambia la visibilidad pública de un sorteo (Admin)
+ */
+async function apiSetSorteoVisibility(nombre, visible, token) {
+  return new Promise((resolve, reject) => {
+    google.script.run
+      .withSuccessHandler((response) => {
+        resolve(response);
+      })
+      .withFailureHandler((error) => {
+        console.error("Error al cambiar visibilidad en Apps Script:", error);
+        reject(error);
+      })
+      .setSorteoVisibility(nombre, visible, token);
+  });
+}
+
+/**
+ * Cambia el estado (Activo/Terminada) de un sorteo (Admin)
+ */
+async function apiSetSorteoEstado(nombre, estado, token) {
+  return new Promise((resolve, reject) => {
+    google.script.run
+      .withSuccessHandler((response) => {
+        resolve(response);
+      })
+      .withFailureHandler((error) => {
+        console.error("Error al cambiar estado en Apps Script:", error);
+        reject(error);
+      })
+      .setSorteoEstado(nombre, estado, token);
+  });
+}
+</script>

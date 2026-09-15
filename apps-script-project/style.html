@@ -1,0 +1,671 @@
+<style>
+/* Estilos Generales - Identidad Inter Chile (Azul Marino / Plateado) */
+:root {
+  --color-pitch-deep: #050d1f;
+  --color-pitch-light: #0f2a52;
+  --color-grass-neon: #5ac8fa;
+  --color-referee-yellow: #f1c40f;
+  --color-red-card: #e74c3c;
+  --color-text-light: #f3f4f6;
+  --color-text-dark: #1f2937;
+  --color-bg-dark: #060b16;
+  --color-card-bg: #0c1930;
+  --color-card-border: #1e3a63;
+  --color-accent-blue: #8fb8e8;
+  --font-sporty: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-sporty);
+  background: radial-gradient(circle at top, var(--color-pitch-light) 0%, var(--color-bg-dark) 100%);
+  color: var(--color-text-light);
+  min-height: 100vh;
+  line-height: 1.6;
+}
+
+/* Encabezado e Identidad - Ambiente de Estadio */
+header {
+  position: relative;
+  text-align: center;
+  padding: 2.5rem 1rem 2rem 1rem;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse 60% 100% at 15% 0%, rgba(143, 184, 232, 0.25) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 100% at 85% 0%, rgba(143, 184, 232, 0.25) 0%, transparent 60%),
+    linear-gradient(180deg, rgba(5,13,31,0.95) 0%, rgba(13,17,23,0) 100%);
+  border-bottom: 2px solid var(--color-pitch-light);
+}
+
+/* Silueta de niños jugando fútbol, como banda decorativa al pie del encabezado */
+.stadium-kids {
+  position: absolute;
+  inset: 0;
+  background-image: url('assets/kids-playing.svg');
+  background-repeat: no-repeat;
+  background-position: bottom center;
+  background-size: 100% 100%;
+  opacity: 0.4;
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* Simula reflectores de estadio iluminando desde ambos costados */
+.stadium-lights {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    repeating-conic-gradient(from 200deg at 0% -10%, rgba(255,255,255,0.06) 0deg 4deg, transparent 4deg 14deg),
+    repeating-conic-gradient(from -20deg at 100% -10%, rgba(255,255,255,0.06) 0deg 4deg, transparent 4deg 14deg);
+  animation: lightsFlicker 6s ease-in-out infinite;
+}
+
+@keyframes lightsFlicker {
+  0%, 100% { opacity: 0.7; }
+  50% { opacity: 1; }
+}
+
+/* Confeti / celebración sutil flotando en el encabezado */
+.confetti-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image:
+    radial-gradient(3px 3px at 10% 20%, var(--color-grass-neon) 0%, transparent 60%),
+    radial-gradient(3px 3px at 25% 60%, var(--color-referee-yellow) 0%, transparent 60%),
+    radial-gradient(3px 3px at 40% 15%, #fff 0%, transparent 60%),
+    radial-gradient(3px 3px at 60% 70%, var(--color-grass-neon) 0%, transparent 60%),
+    radial-gradient(3px 3px at 75% 25%, var(--color-referee-yellow) 0%, transparent 60%),
+    radial-gradient(3px 3px at 90% 55%, #fff 0%, transparent 60%);
+  opacity: 0.6;
+  animation: confettiFall 8s linear infinite;
+}
+
+@keyframes confettiFall {
+  0% { background-position-y: -10px, -10px, -10px, -10px, -10px, -10px; }
+  100% { background-position-y: 40px, 60px, 30px, 70px, 45px, 55px; }
+}
+
+.logo-club {
+  position: relative;
+  z-index: 1;
+  width: 110px;
+  height: 110px;
+  object-fit: contain;
+  margin-bottom: 0.5rem;
+  filter: drop-shadow(0 0 14px rgba(143, 184, 232, 0.6));
+}
+
+h1 {
+  position: relative;
+  z-index: 1;
+  font-size: 2rem;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  text-shadow: 0 0 15px rgba(90, 200, 250, 0.4);
+}
+
+.subtitle {
+  position: relative;
+  z-index: 1;
+  color: #8b949e;
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+
+/* Marcador de Estadio (Estadísticas) */
+.scoreboard-container {
+  max-width: 900px;
+  margin: -1rem auto 2rem auto;
+  padding: 0 1rem;
+}
+
+.scoreboard {
+  background-color: #000;
+  border: 4px double #333;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.7), inset 0 0 15px rgba(90, 200, 250, 0.1);
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.5rem;
+  text-align: center;
+}
+
+@media (min-width: 768px) {
+  .scoreboard {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.score-panel {
+  border-right: 1px dashed #333;
+  padding: 0.5rem;
+}
+
+.score-panel:last-child {
+  border-right: none;
+}
+
+.score-label {
+  font-size: 0.75rem;
+  color: #8b949e;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  margin-bottom: 0.25rem;
+}
+
+.score-value {
+  font-size: 2rem;
+  font-family: 'Courier New', Courier, monospace;
+  font-weight: bold;
+  color: var(--color-grass-neon);
+  text-shadow: 0 0 10px rgba(90, 200, 250, 0.7);
+}
+
+.score-value.recaudado {
+  color: #fff;
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+}
+
+.score-value.var {
+  color: var(--color-referee-yellow);
+  text-shadow: 0 0 10px rgba(241, 196, 15, 0.7);
+}
+
+.score-value.goles {
+  color: var(--color-red-card);
+  text-shadow: 0 0 10px rgba(231, 76, 60, 0.7);
+}
+
+/* Navegación y Vistas */
+.nav-tabs {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  padding: 0 1rem;
+}
+
+.nav-btn {
+  background: var(--color-card-bg);
+  color: var(--color-text-light);
+  border: 1px solid var(--color-card-border);
+  padding: 0.6rem 1.2rem;
+  border-radius: 20px;
+  cursor: pointer;
+  font-weight: bold;
+  font-family: var(--font-sporty);
+  text-transform: uppercase;
+  font-size: 0.8rem;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.nav-btn:hover {
+  background: var(--color-pitch-light);
+  border-color: var(--color-grass-neon);
+}
+
+.nav-btn.active {
+  background: var(--color-grass-neon);
+  color: var(--color-bg-dark);
+  border-color: var(--color-grass-neon);
+  box-shadow: 0 0 15px rgba(90, 200, 250, 0.4);
+}
+
+/* Vistas */
+.view-section {
+  display: none;
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 0 1rem 5rem 1rem;
+}
+
+.view-section.active {
+  display: block;
+}
+
+/* Leyenda */
+.legend {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+  font-size: 0.85rem;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.dot.disponible { background-color: var(--color-grass-neon); box-shadow: 0 0 5px var(--color-grass-neon); }
+.dot.reservado { background-color: var(--color-referee-yellow); box-shadow: 0 0 5px var(--color-referee-yellow); }
+.dot.pagado { background-color: var(--color-red-card); box-shadow: 0 0 5px var(--color-red-card); }
+.dot.seleccionado { background-color: var(--color-accent-blue); box-shadow: 0 0 5px var(--color-accent-blue); }
+
+/* Grilla de Números */
+.grid-container {
+  background: var(--color-card-bg);
+  border: 1px solid var(--color-card-border);
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+}
+
+.tickets-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(65px, 1fr));
+  gap: 0.75rem;
+}
+
+.ticket {
+  background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+  border: 2px solid var(--color-card-border);
+  aspect-ratio: 1;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  font-weight: bold;
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.ticket .num-val {
+  font-size: 1.3rem;
+  z-index: 2;
+}
+
+.ticket .status-badge {
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  color: #8b949e;
+  z-index: 2;
+}
+
+/* Estados de los Números */
+.ticket.disponible {
+  border-color: rgba(90, 200, 250, 0.3);
+}
+.ticket.disponible:hover {
+  background: var(--color-pitch-light);
+  border-color: var(--color-grass-neon);
+  box-shadow: 0 0 12px rgba(90, 200, 250, 0.4);
+  transform: translateY(-2px);
+}
+
+.ticket.reservado {
+  background: linear-gradient(135deg, rgba(241,196,15,0.15) 0%, rgba(20,20,20,0.8) 100%);
+  border-color: var(--color-referee-yellow);
+}
+.ticket.reservado .num-val {
+  color: var(--color-referee-yellow);
+}
+.ticket.reservado .status-badge {
+  color: var(--color-referee-yellow);
+}
+
+.ticket.pagado {
+  background: linear-gradient(135deg, rgba(231,76,60,0.15) 0%, rgba(20,20,20,0.8) 100%);
+  border-color: var(--color-red-card);
+}
+.ticket.pagado .num-val {
+  color: var(--color-red-card);
+}
+.ticket.pagado .status-badge {
+  color: var(--color-red-card);
+}
+
+/* Selección Múltiple (Modo Admin) */
+.ticket.selected {
+  background: linear-gradient(135deg, rgba(0,210,255,0.2) 0%, rgba(0,0,0,0.8) 100%) !important;
+  border-color: var(--color-accent-blue) !important;
+  box-shadow: 0 0 15px rgba(0, 210, 255, 0.6) !important;
+  transform: scale(1.05);
+}
+
+/* Modales y Formularios */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.85);
+  z-index: 1000;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  backdrop-filter: blur(5px);
+}
+
+.modal-overlay.active {
+  display: flex;
+}
+
+.modal-card {
+  background: var(--color-card-bg);
+  border: 1px solid var(--color-card-border);
+  border-radius: 12px;
+  width: 100%;
+  max-width: 450px;
+  padding: 1.5rem;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+  animation: modalIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes modalIn {
+  from { transform: scale(0.8); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid var(--color-card-border);
+  padding-bottom: 0.5rem;
+}
+
+.modal-header h3 {
+  font-size: 1.3rem;
+  color: var(--color-text-light);
+  text-transform: uppercase;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  color: #8b949e;
+  font-size: 1.5rem;
+  cursor: pointer;
+}
+
+.close-btn:hover {
+  color: #fff;
+}
+
+/* Formularios */
+.form-group {
+  margin-bottom: 1.2rem;
+}
+
+label {
+  display: block;
+  font-size: 0.85rem;
+  color: #8b949e;
+  margin-bottom: 0.4rem;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+input, select {
+  width: 100%;
+  background-color: #0d1117;
+  border: 1px solid var(--color-card-border);
+  border-radius: 6px;
+  padding: 0.7rem;
+  color: #fff;
+  font-family: var(--font-sporty);
+  font-size: 0.95rem;
+}
+
+input:focus, select:focus {
+  border-color: var(--color-grass-neon);
+  outline: none;
+  box-shadow: 0 0 5px rgba(90, 200, 250, 0.3);
+}
+
+.form-row {
+  display: flex;
+  gap: 1rem;
+}
+
+.form-row .form-group {
+  flex: 1;
+}
+
+/* Botones */
+.btn-primary {
+  width: 100%;
+  background-color: var(--color-grass-neon);
+  color: var(--color-bg-dark);
+  font-family: var(--font-sporty);
+  font-weight: bold;
+  text-transform: uppercase;
+  border: none;
+  padding: 0.8rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.95rem;
+  transition: all 0.2s;
+}
+
+.btn-primary:hover {
+  background-color: #3fa9e0;
+  box-shadow: 0 0 15px rgba(90, 200, 250, 0.5);
+}
+
+.btn-secondary {
+  width: 100%;
+  background-color: #21262d;
+  color: #c9d1d9;
+  font-family: var(--font-sporty);
+  font-weight: bold;
+  text-transform: uppercase;
+  border: 1px solid var(--color-card-border);
+  padding: 0.8rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.95rem;
+  transition: all 0.2s;
+  margin-top: 0.5rem;
+}
+
+.btn-secondary:hover {
+  background-color: #30363d;
+  color: #fff;
+}
+
+.btn-danger {
+  background-color: transparent;
+  color: var(--color-red-card);
+  border: 1px solid var(--color-red-card);
+}
+
+.btn-danger:hover {
+  background-color: var(--color-red-card);
+  color: #fff;
+}
+
+/* Pantalla de Login */
+.login-card {
+  background: var(--color-card-bg);
+  border: 1px solid var(--color-card-border);
+  border-radius: 12px;
+  padding: 2rem;
+  max-width: 400px;
+  margin: 3rem auto;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+  text-align: center;
+}
+
+.login-card h2 {
+  text-transform: uppercase;
+  margin-bottom: 1.5rem;
+}
+
+/* Barra de Tácticas Admin Flotante (Multi-selección) */
+.tactics-bar {
+  position: fixed;
+  bottom: -100px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: rgba(22, 27, 34, 0.95);
+  border: 2px solid var(--color-accent-blue);
+  border-radius: 30px;
+  padding: 0.8rem 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.8), 0 0 15px rgba(0, 210, 255, 0.3);
+  z-index: 900;
+  transition: bottom 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  backdrop-filter: blur(5px);
+  width: 90%;
+  max-width: 500px;
+}
+
+.tactics-bar.active {
+  bottom: 20px;
+}
+
+.tactics-text {
+  font-size: 0.85rem;
+  font-weight: bold;
+  color: #fff;
+  flex-grow: 1;
+}
+
+.tactics-text span {
+  color: var(--color-accent-blue);
+  font-size: 1.1rem;
+}
+
+.tactics-btn {
+  background-color: var(--color-accent-blue);
+  color: var(--color-bg-dark);
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-weight: bold;
+  cursor: pointer;
+  font-family: var(--font-sporty);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  box-shadow: 0 0 10px rgba(0, 210, 255, 0.5);
+}
+
+.tactics-btn:hover {
+  background-color: #00b0d6;
+  box-shadow: 0 0 15px rgba(0, 210, 255, 0.8);
+}
+
+/* Panel de Configuración de API */
+.api-config-card {
+  background-color: var(--color-card-bg);
+  border: 1px solid var(--color-card-border);
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-top: 2rem;
+}
+
+.api-config-card h4 {
+  text-transform: uppercase;
+  font-size: 0.9rem;
+  color: #fff;
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.api-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--color-referee-yellow);
+}
+
+.api-status-dot.active {
+  background-color: var(--color-grass-neon);
+}
+
+.api-config-desc {
+  font-size: 0.8rem;
+  color: #8b949e;
+  margin-bottom: 1rem;
+}
+
+/* Tabla de Registro Completo (Admin) */
+.accounting-table-container {
+  overflow-x: auto;
+  margin-top: 1.5rem;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+  text-align: left;
+}
+
+th {
+  background-color: #1f2937;
+  color: #fff;
+  font-weight: bold;
+  text-transform: uppercase;
+  padding: 0.8rem;
+  border: 1px solid var(--color-card-border);
+}
+
+td {
+  padding: 0.8rem;
+  border: 1px solid var(--color-card-border);
+}
+
+tr:nth-child(even) {
+  background-color: #161b22;
+}
+
+.badge-status {
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  font-weight: bold;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+}
+
+.badge-status.disponible { background-color: rgba(90, 200, 250, 0.2); color: var(--color-grass-neon); }
+.badge-status.reservado { background-color: rgba(241, 196, 15, 0.2); color: var(--color-referee-yellow); }
+.badge-status.pagado { background-color: rgba(231, 76, 60, 0.2); color: var(--color-red-card); }
+
+/* Animaciones */
+@keyframes pulseGlow {
+  0% { transform: scale(1); box-shadow: 0 0 5px rgba(90, 200, 250, 0.4); }
+  50% { transform: scale(1.02); box-shadow: 0 0 15px rgba(90, 200, 250, 0.7); }
+  100% { transform: scale(1); box-shadow: 0 0 5px rgba(90, 200, 250, 0.4); }
+}
+
+.pulse-target {
+  animation: pulseGlow 2s infinite ease-in-out;
+}
+
+</style>

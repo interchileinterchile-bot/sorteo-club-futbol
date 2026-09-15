@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang='es'>
+<head>
+  <meta charset='UTF-8'>
+  <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+  <title>Inter Chile - Gran Sorteo Deportivo</title>
+  <!-- Fuente deportiva Montserrat -->
+  <link href='https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;800&display=swap' rel='stylesheet'>
+  <link rel='stylesheet' href='css/style.css'>
+</head>
+<body>
+
+  <!-- Encabezado / Hero -->
+  <header class='hero'>
+    <div class='stadium-lights'></div>
+    <div class='confetti-layer'></div>
+    <div class='hero-orb hero-orb-one'></div>
+    <div class='hero-orb hero-orb-two'></div>
+    <div class='hero-shell'>
+      <div class='brand-lockup'>
+        <img class='logo-club' src='assets/escudo-inter-chile.jpg' alt='Escudo Inter Chile'>
+        <span>Inter Chile<br><b>Club deportivo</b></span>
+      </div>
+      <div class='hero-copy'>
+        <p class='eyebrow'><span></span> Sorteo oficial 2026</p>
+        <h1 id='raffle-title'>Juega por <em>el club.</em></h1>
+        <p class='subtitle' id='raffle-subtitle'>Cada número suma. Apoya a Inter Chile y sé parte del próximo gran triunfo.</p>
+        <div class='hero-actions'>
+          <a class='hero-cta' href='#view-public'>Elige tu número <span>↓</span></a>
+          <div class='raffle-switcher'>
+            <label for='sorteo-select'>Sorteo activo</label>
+            <select id='sorteo-select' onchange='handleSorteoChange()'></select>
+            <span class='active-raffle-name' id='active-raffle-name'>Cargando sorteo…</span>
+          </div>
+          <button type='button' class='active-raffle-delete admin-only-ui' style='display: none;' onclick='handleDeleteSorteo()'>
+            Eliminar sorteo activo
+          </button>
+        </div>
+      </div>
+      <div class='hero-art' aria-hidden='true'>
+        <div class='ball-pattern'></div>
+        <div class='hero-number'>10</div>
+        <div class='hero-art-label'>Juntos<br>somos más</div>
+      </div>
+    </div>
+    <div class='hero-footer'>
+      <span>Inter Chile · pasión que nos une</span>
+      <span class='scroll-cue'>Desliza para participar <i></i></span>
+    </div>
+  </header>
+
+  <!-- Marcador de Estadio (Estadísticas en tiempo real) - SOLO ADMIN -->
+  <div class='scoreboard-container' id='scoreboard-container' style='display: none;'>
+    <div class='scoreboard'>
+      <div class='score-panel'>
+        <div class='score-label'>Recaudado</div>
+        <div class='score-value recaudado' id='stat-recaudado'>$0</div>
+      </div>
+      <div class='score-panel'>
+        <div class='score-label'>Goles (Pagados)</div>
+        <div class='score-value goles' id='stat-pagados'>00</div>
+      </div>
+      <div class='score-panel'>
+        <div class='score-label'>En el VAR (Reservas)</div>
+        <div class='score-value var' id='stat-reservados'>00</div>
+      </div>
+      <div class='score-panel'>
+        <div class='score-label'>Suplentes (Libres)</div>
+        <div class='score-value' id='stat-disponibles'>00</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Barra de Navegación de Pestañas -->
+  <div class='nav-tabs'>
+    <button class='nav-btn active' onclick='switchTab("public-view")'>
+      <span>⚽</span> Ver Sorteo
+    </button>
+    <button class='nav-btn' id='nav-accounting-tab' style='display: none;' onclick='switchTab("accounting-view")'>
+      <span>📊</span> Contabilidad
+    </button>
+    <button class='nav-btn' id='nav-login-tab' onclick='switchTab("login-view")'>
+      <span>🔒</span> Modo Admin
+    </button>
+  </div>
+
+  <!-- PESTAÑA 1: VISTA PÚBLICA / TABLERO DE NÚMEROS -->
+  <main class='view-section active' id='view-public'>
+    <!-- Leyenda de Estados -->
+    <div class='legend'>
+      <div class='legend-item'>
+        <span class='dot disponible'></span>
+        <span>Disponible</span>
+      </div>
+      <div class='legend-item'>
+        <span class='dot reservado'></span>
+        <span>Reservado</span>
+      </div>
+      <div class='legend-item'>
+        <span class='dot pagado'></span>
+        <span>Pagado (Gol!)</span>
+      </div>
+      <div class='legend-item admin-only-ui' style='display: none;'>
+        <span class='dot seleccionado'></span>
+        <span>Seleccionado</span>
+      </div>
+    </div>
+
+    <!-- Selección Aleatoria de Números (Solo Admin) -->
+    <div class='grid-container admin-only-ui' style='display: none; margin-bottom: 1.5rem; padding: 1rem 1.5rem;'>
+      <div style='display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;'>
+        <label for='random-pick-count' style='color: #8b949e; font-size: 0.85rem;'>🎲 Elegir al azar</label>
+        <input type='number' id='random-pick-count' value='5' min='1' max='100' style='max-width: 90px;'>
+        <button type='button' class='btn-secondary' style='margin-top: 0; font-size: 0.85rem;' onclick='handlePickRandomNumbers()'>Seleccionar números disponibles al azar</button>
+      </div>
+    </div>
+
+    <!-- Contenedor del Tablero -->
+    <div class='grid-container'>
+      <div class='tickets-grid' id='tickets-container'>
+        <!-- Los números se generarán aquí con JavaScript -->
+      </div>
+    </div>
+  </main>
+
+  <!-- PESTAÑA 2: PANEL DE CONTABILIDAD & REGISTRO (SOLO ADMIN) -->
+  <section class='view-section' id='view-accounting'>
+    <div class='grid-container' style='margin-bottom: 2rem;'>
+      <h2 style='text-transform: uppercase; margin-bottom: 1rem; font-size: 1.4rem; border-bottom: 1px solid var(--color-card-border); padding-bottom: 0.5rem;'>
+        📊 Balance Contable
+      </h2>
+      <div style='display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;'>
+        <div style='background: #0d1117; padding: 1rem; border-radius: 8px; border: 1px solid var(--color-card-border);'>
+          <span style='font-size: 0.8rem; color: #8b949e; text-transform: uppercase;'>Efectivo Recaudado</span>
+          <div style='font-size: 1.6rem; font-weight: bold; color: #fff;' id='calc-efectivo'>$0</div>
+        </div>
+        <div style='background: #0d1117; padding: 1rem; border-radius: 8px; border: 1px solid var(--color-card-border);'>
+          <span style='font-size: 0.8rem; color: #8b949e; text-transform: uppercase;'>Transferencias Recaudado</span>
+          <div style='font-size: 1.6rem; font-weight: bold; color: #fff;' id='calc-transferencia'>$0</div>
+        </div>
+        <div style='background: #0d1117; padding: 1rem; border-radius: 8px; border: 1px solid var(--color-card-border);'>
+          <span style='font-size: 0.8rem; color: #8b949e; text-transform: uppercase;'>Por Cobrar (Reservas)</span>
+          <div style='font-size: 1.6rem; font-weight: bold; color: var(--color-referee-yellow);' id='calc-pendiente'>$0</div>
+        </div>
+        <div style='background: #0d1117; padding: 1rem; border-radius: 8px; border: 1px solid var(--color-card-border);'>
+          <span style='font-size: 0.8rem; color: #8b949e; text-transform: uppercase;'>Recaudación Potencial</span>
+          <div style='font-size: 1.6rem; font-weight: bold; color: var(--color-grass-neon);' id='calc-potencial'>$0</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sorteo del Ganador -->
+    <div class='grid-container' style='margin-bottom: 2rem;'>
+      <h2 style='text-transform: uppercase; margin-bottom: 1rem; font-size: 1.4rem; border-bottom: 1px solid var(--color-card-border); padding-bottom: 0.5rem;'>
+        🏆 Sorteo del Ganador
+      </h2>
+      <p style='color: #8b949e; font-size: 0.85rem; margin-bottom: 1rem;'>
+        Solo participan los dorsales marcados como "Pagado" (Gol!) del sorteo activo. Elige cuántos ganadores quieres sortear y presiona el botón.
+      </p>
+      <div style='display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem;'>
+        <label for='winners-count' style='color: #8b949e; font-size: 0.85rem;'>Cantidad de ganadores</label>
+        <input type='number' id='winners-count' value='1' min='1' max='100' style='max-width: 90px;'>
+        <button type='button' class='btn-primary' style='margin-top: 0; font-size: 0.85rem; padding: 0.6rem 1rem;' onclick='handleDrawWinners()'>🎉 Tirar Rifa y Elegir Ganador(es)</button>
+      </div>
+      <div id='winners-result' style='display: none; background: #0d1117; padding: 1rem 1.5rem; border-radius: 8px; border: 1px solid var(--color-card-border);'></div>
+    </div>
+
+    <!-- Tabla detallada de Compradores -->
+    <div class='grid-container'>
+      <div style='display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 1rem;'>
+        <h2 style='text-transform: uppercase; font-size: 1.3rem;'>📋 Registro de Compras</h2>
+        <input type='text' id='accounting-search' placeholder='🔍 Buscar por número, nombre o teléfono...' style='max-width: 300px; padding: 0.5rem;'>
+      </div>
+      
+      <div class='accounting-table-container'>
+        <table id='accounting-table'>
+          <thead>
+            <tr>
+              <th>Dorsal</th>
+              <th>Estado</th>
+              <th>Nombre del Comprador</th>
+              <th>Teléfono</th>
+              <th>Medio de Pago</th>
+              <th>Última Actualización</th>
+            </tr>
+          </thead>
+          <tbody id='accounting-table-body'>
+            <!-- Filas dinámicas -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- PESTAÑA 3: LOGIN / PANEL DE CONFIGURACIÓN DE ACCESO -->
+  <section class='view-section' id='view-login'>
+    <!-- Login de Administrador -->
+    <div class='login-card' id='login-card-container'>
+      <h2>Acceso Administrador</h2>
+      <p style='color: #8b949e; font-size: 0.85rem; margin-bottom: 1.5rem;'>Ingresa la contraseña técnica para gestionar el sorteo y la contabilidad.</p>
+      
+      <form id='login-form' onsubmit='handleLogin(event)'>
+        <div class='form-group'>
+          <label for='admin-password'>Contraseña</label>
+          <input type='password' id='admin-password' placeholder='••••••••' required autocomplete='current-password'>
+        </div>
+        <button type='submit' class='btn-primary'>Entrar a la Cancha</button>
+      </form>
+    </div>
+
+    <!-- Panel de Sesión del Administrador (Se muestra si está logueado) -->
+    <div class='login-card' id='admin-session-container' style='display: none; max-width: 600px;'>
+      <h2>¡Bienvenido, Administrador!</h2>
+      <p style='color: var(--color-grass-neon); font-weight: bold; margin-bottom: 1.5rem;'>La sesión está activa y tienes autorización para modificar números.</p>
+      
+      <button class='btn-secondary btn-danger' onclick='handleLogout()' style='max-width: 250px; margin: 0 auto 2rem auto;'>
+        Cerrar Sesión Administrador
+      </button>
+
+      <!-- Gestión de Sorteos (una hoja, múltiples pestañas de sorteo) -->
+      <div class='api-config-card'>
+        <h4>🏆 Gestión de Sorteos</h4>
+        <p class='api-config-desc'>
+          Todos los sorteos viven en la misma Hoja de Cálculo, cada uno como una pestaña independiente. Crea uno nuevo o elimina el que tienes seleccionado arriba en "Sorteo activo".
+        </p>
+        <form id='new-sorteo-form' onsubmit='handleCreateSorteo(event)' style='text-align: left;'>
+          <div class='form-row'>
+            <div class='form-group'>
+              <label for='new-sorteo-name'>Nombre del nuevo sorteo</label>
+              <input type='text' id='new-sorteo-name' placeholder='Ej. Rifa Septiembre 2026' required>
+            </div>
+            <div class='form-group'>
+              <label for='new-sorteo-count'>Cantidad de números</label>
+              <input type='number' id='new-sorteo-count' value='100' min='1' max='1000' required>
+            </div>
+          </div>
+          <div style='display: flex; gap: 1rem;'>
+            <button type='submit' class='btn-primary' style='font-size: 0.8rem; padding: 0.6rem;'>Crear Sorteo</button>
+          </div>
+        </form>
+
+        <div class='accounting-table-container' style='margin-top: 1.5rem;'>
+          <table id='sorteo-management-table'>
+            <thead>
+              <tr>
+                <th>Sorteo</th>
+                <th>Estado</th>
+                <th>Visibilidad</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id='sorteo-management-body'>
+              <!-- Filas dinámicas -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- BARRA DE TÁCTICAS FLOTANTE (SELECCIÓN MÚLTIPLE - SOLO ADMIN) -->
+  <div class='tactics-bar' id='tactics-bar-container'>
+    <div class='tactics-text'>
+      Has seleccionado <span id='tactics-count'>0</span> número(s)
+    </div>
+    <button class='tactics-btn' onclick='openMultiSelectModal()'>Asignar Comprador</button>
+    <button class='close-btn' onclick='clearSelection()' style='font-size: 1.1rem; color: #ff6b6b;'>✖</button>
+  </div>
+
+  <!-- MODAL PARA REGISTRO / ACTUALIZACIÓN DE NÚMEROS -->
+  <div class='modal-overlay' id='ticket-modal'>
+    <div class='modal-card'>
+      <div class='modal-header'>
+        <h3 id='modal-ticket-title'>Registrar Dorsal</h3>
+        <button class='close-btn' onclick='closeModal()'>&times;</button>
+      </div>
+      
+      <form id='ticket-form' onsubmit='saveTicketData(event)'>
+        <!-- Números seleccionados invisibles / descriptivos -->
+        <div class='form-group' id='modal-selected-nums-desc' style='font-weight: bold; color: var(--color-accent-blue); background: #0d1117; padding: 0.5rem 1rem; border-radius: 6px; border-left: 3px solid var(--color-accent-blue); margin-bottom: 1.2rem;'>
+          Números: -
+        </div>
+
+        <div class='form-group'>
+          <label for='buyer-name'>Nombre del Comprador</label>
+          <input type='text' id='buyer-name' placeholder='Ej. Juan Pérez' required>
+        </div>
+
+        <div class='form-group'>
+          <label for='buyer-phone'>Número de Teléfono</label>
+          <input type='tel' id='buyer-phone' placeholder='Ej. +56912345678' required>
+        </div>
+
+        <div class='form-row'>
+          <div class='form-group'>
+            <label for='ticket-status'>Estado del Dorsal</label>
+            <select id='ticket-status' onchange='togglePaymentFields()' required>
+              <option value='Reservado'>En el VAR (Reservado)</option>
+              <option value='Pagado'>Gol! (Pagado)</option>
+              <option value='Disponible'>Disponible (Liberar)</option>
+            </select>
+          </div>
+
+          <div class='form-group' id='payment-method-container'>
+            <label for='payment-method'>Medio de Pago</label>
+            <select id='payment-method'>
+              <option value='Transferencia'>Transferencia</option>
+              <option value='Efectivo'>Efectivo</option>
+            </select>
+          </div>
+        </div>
+
+        <div style='display: flex; gap: 1rem; margin-top: 1.5rem;'>
+          <button type='submit' class='btn-primary' id='save-btn'>Confirmar Registro</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Carga de Archivos de Scripts -->
+  <script src='js/config.js'></script>
+  <script src='js/api.js'></script>
+  <script src='js/admin.js'></script>
+  <script src='js/app.js'></script>
+</body>
+</html>
