@@ -578,20 +578,21 @@ async function refreshPremios(nombre) {
 
 async function handleSavePremio(event) {
   event.preventDefault();
+  const form = event.currentTarget;
   const panel = document.getElementById('prize-manager');
   const nombre = panel.dataset.sorteo;
   const titulo = document.getElementById('new-prize-title').value.trim();
   const descripcion = document.getElementById('new-prize-description').value.trim();
   const image = document.getElementById('new-prize-image').files[0];
   if (!nombre || !titulo) return;
-  const button = event.currentTarget.querySelector('button[type="submit"]');
+  const button = form.querySelector('button[type="submit"]');
   button.disabled = true;
   button.classList.add('is-loading');
   button.innerHTML = '<span class="button-spinner"></span> Guardando premio…';
   try {
     const result = await apiSavePremio(nombre, titulo, descripcion, image ? await readImageAsDataUrl(image) : '', getAdminToken());
     if (!result.success) throw new Error(result.error || 'No se pudo guardar el premio.');
-    event.currentTarget.reset();
+    form.reset();
     await refreshPremios(nombre);
   } catch (error) {
     alert('❌ ' + error.message);
