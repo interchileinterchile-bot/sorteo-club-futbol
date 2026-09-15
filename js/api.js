@@ -248,6 +248,12 @@ async function apiCreateSorteo(nombre, cantidad, token, precio = 5000) {
   }
 }
 
+async function apiUploadPrizeImage(nombre, descripcion, imagen, token) {
+  const response = await fetch(getApiUrl(), { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ action: 'uploadPrizeImage', nombre, descripcion, imagen, token }) });
+  if (!response.ok) throw new Error('No se pudo subir la imagen.');
+  return response.json();
+}
+
 /**
  * Elimina un sorteo existente (Admin)
  */

@@ -390,6 +390,12 @@ async function handleCreateSorteo(e) {
   try {
     const result = await apiCreateSorteo(nombre, cantidad, token, precio);
     if (result.success) {
+      const image = document.getElementById('prize-image').files[0];
+      if (image) {
+        const data = await new Promise((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(reader.result); reader.onerror = reject; reader.readAsDataURL(image); });
+        const upload = await apiUploadPrizeImage(result.sorteo, document.getElementById('prize-description').value.trim(), data, token);
+        if (!upload.success) throw new Error(upload.error || 'No se pudo guardar la imagen.');
+      }
       alert(`⚽ ${result.message}`);
       nameInput.value = '';
       countInput.value = '100';

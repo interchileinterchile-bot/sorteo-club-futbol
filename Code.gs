@@ -116,6 +116,10 @@ function doPost(e) {
     return jsonResponse(deleteSorteo(postData.nombre, postData.token));
   }
 
+  if (action === "uploadPrizeImage") {
+    return jsonResponse(uploadPrizeImage(postData.nombre, postData.descripcion, postData.imagen, postData.token));
+  }
+
   if (action === "setSorteoVisibility") {
     return jsonResponse(setSorteoVisibility(postData.nombre, postData.visible, postData.token));
   }
@@ -162,7 +166,10 @@ function getOrCreateConfigSheet(spreadsheet) {
       .forEach(s => sheet.appendRow([s.getName(), false, "Activo"]));
   }
 
-  if (sheet.getLastColumn() < 4) sheet.getRange(1, 4).setValue("Valor por número");
+  const headers = ["Sorteo", "Activo", "Estado", "Valor por número", "Descripción del premio", "Imagen del premio"];
+  headers.forEach((header, index) => {
+    if (!sheet.getRange(1, index + 1).getValue()) sheet.getRange(1, index + 1).setValue(header);
+  });
   return sheet;
 }
 
@@ -175,12 +182,13 @@ function getConfigMap(spreadsheet) {
   const map = {};
 
   if (lastRow > 1) {
-    const values = sheet.getRange(2, 1, lastRow - 1, 4).getValues();
+    const values = sheet.getRange(2, 1, lastRow - 1, 6).getValues();
     values.forEach(row => {
       if (row[0]) {
         map[row[0]] = {
           visible: row[1] === true || row[1] === "TRUE",
-          estado: row[2] || "Activo", precio: Number(row[3]) || DEFAULT_TICKET_PRICE
+          estado: row[2] || "Activo", precio: Number(row[3]) || DEFAULT_TICKET_PRICE,
+          descripcion: row[4] || "", imagen: row[5] || ""
         };
       }
     });
@@ -230,6 +238,29 @@ function removeSorteoConfig(nombre) {
       return;
     }
   }
+}
+
+function uploadPrizeImage(nombre, descripcion, imageData, token) {
+  if (token !== ADMIN_TOKEN) return { success: false, error: "Acceso no autorizado." };
+  if (!nombre || !imageData) return { success: false, error: "Falta la imagen o el sorteo." };
+  try {
+    const match = String(imageData).match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/);
+    if (!match) return { success: false, error: "Formato de imagen inválido." };
+    const bytes = Utilities.base64Decode(match[2]);
+    if (bytes.length > 4 * 1024 * 1024) return { success: false, error: "La imagen supera 4 MB." };
+    const folders = DriveApp.getFoldersByName("Premios Sorteos Inter Chile");
+    const folder = folders.hasNext() ? folders.next() : DriveApp.createFolder("Premios Sorteos Inter Chile");
+    const extension = match[1].split('/')[1].replace('jpeg', 'jpg');
+    const file = folder.createFile(Utilities.newBlob(bytes, match[1], `${nombre}-${Date.now()}.${extension}`));
+    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    const sheet = getOrCreateConfigSheet();
+    const names = sheet.getRange(2, 1, Math.max(sheet.getLastRow() - 1, 1), 1).getValues();
+    const row = names.findIndex(r => r[0] === nombre) + 2;
+    if (row < 2) return { success: false, error: "No se encontró la rifa." };
+    sheet.getRange(row, 5).setValue(descripcion || "");
+    sheet.getRange(row, 6).setValue(`https://drive.google.com/uc?export=view&id=${file.getId()}`);
+    return { success: true, imagen: `https://drive.google.com/uc?export=view&id=${file.getId()}` };
+  } catch (err) { return { success: false, error: err.toString() }; }
 }
 
 /**
