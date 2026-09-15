@@ -417,7 +417,8 @@ async function handleCreateSorteo(e) {
       alert('❌ Error al crear el sorteo: ' + result.error);
     }
   } catch (error) {
-    alert('Ocurrió un error al crear el sorteo.');
+    const detail = error && error.message ? `\n\nDetalle: ${error.message}` : '';
+    alert('Ocurrió un error al crear el sorteo.' + detail);
     console.error(error);
   } finally {
     hideLoading();

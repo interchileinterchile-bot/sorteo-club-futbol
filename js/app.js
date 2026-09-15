@@ -35,6 +35,7 @@ async function refreshSorteosList() {
   try {
     const token = getAdminToken();
     const result = await apiListSorteos(token);
+    if (result && result.error) throw new Error(result.error);
     const lista = (result && result.sorteos) || [];
 
     // En modo Admin la API retorna objetos {nombre, visible, estado}; en modo público, solo nombres
@@ -58,6 +59,10 @@ async function refreshSorteosList() {
     renderSorteoSelector();
   } catch (error) {
     console.error('Error al cargar la lista de sorteos:', error);
+    if (isAdminLoggedIn()) {
+      const container = document.getElementById('sorteo-history-list');
+      if (container) container.innerHTML = `<p class="raffle-history-empty">No se pudo cargar el historial: ${error.message || 'error de conexión'}. Pulsa “Actualizar lista” para reintentar.</p>`;
+    }
     // Los sorteos siempre provienen de Google Sheets; no usar una lista fija.
     sorteosDisponibles = [];
     currentSorteo = null;
