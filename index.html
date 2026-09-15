@@ -82,6 +82,10 @@
 
   <!-- PESTAÑA 1: VISTA PÚBLICA / TABLERO DE NÚMEROS -->
   <main class='view-section active' id='view-public'>
+    <div class='grid-container admin-only-ui' id='current-raffle-banner' style='display:none; margin-bottom:1rem; padding:1rem 1.25rem;'>
+      <span style='color:var(--color-accent-blue);font-size:.7rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;'>Administrando rifa</span>
+      <h2 id='current-raffle-name' style='margin-top:.25rem;text-transform:uppercase;'></h2>
+    </div>
     <div id='public-raffles-container'></div>
     <!-- Leyenda de Estados -->
     <div class='legend'>

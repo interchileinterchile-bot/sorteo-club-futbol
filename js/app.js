@@ -88,6 +88,8 @@ async function renderPublicRaffles(raffles) {
 function renderSorteoSelector() {
   const title = document.getElementById('raffle-title');
   if (title && currentSorteo) title.dataset.currentRaffle = currentSorteo;
+  const currentName = document.getElementById('current-raffle-name');
+  if (currentName) currentName.textContent = currentSorteo || 'Sin rifa seleccionada';
 }
 
 /**
