@@ -472,6 +472,7 @@ function renderSorteoManagement() {
       <p>${esActivo ? 'Rifa abierta actualmente. Puedes registrar compradores y modificar sus números.' : 'Historial disponible en Google Sheets.'}</p>
       <div class='raffle-card-actions'>
         <button type='button' class='btn-primary' onclick='handleOpenRaffle("${s.nombre}")'>Abrir y administrar</button>
+        <button type='button' class='btn-secondary' onclick='handleOpenDraw("${s.nombre}")'>🏆 Tirar ganadores</button>
         <button type='button' class='btn-secondary' onclick='handleSetSorteoActive("${s.nombre}", ${estaPublicado})'>${estaPublicado ? 'Desactivar público' : 'Activar público'}</button>
         <button type='button' class='btn-secondary' onclick='handleToggleEstado("${s.nombre}", "${s.estado}")'>${s.estado === 'Terminada' ? 'Reactivar' : 'Finalizar'}</button>
         <button type='button' class='btn-secondary btn-danger' onclick='handleDeleteSorteo("${s.nombre}")'>Eliminar</button>
@@ -498,6 +499,12 @@ async function handleViewSorteoFromTable(nombre) {
 async function handleOpenRaffle(nombre) {
   await handleViewSorteoFromTable(nombre);
   switchTab('public-view');
+}
+
+async function handleOpenDraw(nombre) {
+  await handleViewSorteoFromTable(nombre);
+  switchTab('accounting-view');
+  document.getElementById('winners-count')?.focus();
 }
 
 /**
