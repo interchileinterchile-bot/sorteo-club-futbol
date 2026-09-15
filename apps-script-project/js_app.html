@@ -9,7 +9,7 @@ let selectedNumbers = [];      // Números seleccionados para edición múltiple
 let sorteosDisponibles = [];   // Lista de nombres de sorteos visibles para el selector
 let sorteosDetalle = [];       // Lista de objetos {nombre, visible, estado} (solo Admin)
 let currentSorteo = null;      // Nombre del sorteo actualmente seleccionado
-const TICKET_PRICE = 5000;     // Precio de cada número (puedes cambiarlo aquí)
+let TICKET_PRICE = 5000;       // Precio del sorteo abierto, leído desde _Sorteos
 const CURRENT_SORTEO_KEY = 'rifa_current_sorteo';
 
 // Ejecutar al cargar la página

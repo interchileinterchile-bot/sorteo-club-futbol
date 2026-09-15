@@ -75,7 +75,7 @@ async function apiUpdateTickets(ticketsToUpdate, token, sorteo) {
 /**
  * Crea un nuevo sorteo (Admin)
  */
-async function apiCreateSorteo(nombre, cantidad, token) {
+async function apiCreateSorteo(nombre, cantidad, token, precio = 5000) {
   return new Promise((resolve, reject) => {
     google.script.run
       .withSuccessHandler((response) => {
@@ -85,7 +85,7 @@ async function apiCreateSorteo(nombre, cantidad, token) {
         console.error("Error al crear sorteo en Apps Script:", error);
         reject(error);
       })
-      .createSorteo(nombre, cantidad, token);
+      .createSorteo(nombre, cantidad, token, precio);
   });
 }
 

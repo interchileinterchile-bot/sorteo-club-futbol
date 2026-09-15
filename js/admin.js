@@ -374,8 +374,10 @@ async function handleCreateSorteo(e) {
 
   const nameInput = document.getElementById('new-sorteo-name');
   const countInput = document.getElementById('new-sorteo-count');
+  const priceInput = document.getElementById('new-sorteo-price');
   const nombre = nameInput.value.trim();
   const cantidad = parseInt(countInput.value);
+  const precio = parseInt(priceInput.value);
 
   if (!nombre) {
     alert('❌ Debes indicar un nombre para el nuevo sorteo.');
@@ -386,11 +388,12 @@ async function handleCreateSorteo(e) {
   showLoading();
 
   try {
-    const result = await apiCreateSorteo(nombre, cantidad, token);
+    const result = await apiCreateSorteo(nombre, cantidad, token, precio);
     if (result.success) {
       alert(`⚽ ${result.message}`);
       nameInput.value = '';
       countInput.value = '100';
+      priceInput.value = '5000';
       await refreshSorteosList();
       currentSorteo = result.sorteo;
       localStorage.setItem(CURRENT_SORTEO_KEY, currentSorteo);
@@ -477,6 +480,8 @@ function renderSorteoManagement() {
  */
 async function handleViewSorteoFromTable(nombre) {
   currentSorteo = nombre;
+  const detalle = sorteosDetalle.find(s => s.nombre === nombre);
+  if (detalle && detalle.precio) TICKET_PRICE = Number(detalle.precio);
   localStorage.setItem(CURRENT_SORTEO_KEY, currentSorteo);
   renderSorteoSelector();
   renderSorteoManagement();

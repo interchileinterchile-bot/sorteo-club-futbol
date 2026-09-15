@@ -218,7 +218,7 @@ async function apiUpdateTickets(ticketsToUpdate, token, sorteo) {
 /**
  * Crea un nuevo sorteo (Admin)
  */
-async function apiCreateSorteo(nombre, cantidad, token) {
+async function apiCreateSorteo(nombre, cantidad, token, precio = 5000) {
   const url = getApiUrl();
 
   if (!url) {
@@ -238,7 +238,7 @@ async function apiCreateSorteo(nombre, cantidad, token) {
   }
 
   try {
-    const fetchUrl = `${url}?action=createSorteo&nombre=${encodeURIComponent(nombre)}&cantidad=${encodeURIComponent(cantidad)}&token=${encodeURIComponent(token)}`;
+    const fetchUrl = `${url}?action=createSorteo&nombre=${encodeURIComponent(nombre)}&cantidad=${encodeURIComponent(cantidad)}&precio=${encodeURIComponent(precio)}&token=${encodeURIComponent(token)}`;
     const response = await fetch(fetchUrl);
     if (!response.ok) throw new Error('Error de red al crear el sorteo.');
     return await response.json();

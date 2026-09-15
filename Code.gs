@@ -6,6 +6,7 @@ const ADMIN_PASSWORD = getRequiredScriptProperty("ADMIN_PASSWORD");
 const ADMIN_TOKEN = getRequiredScriptProperty("ADMIN_TOKEN");
 const SPREADSHEET_ID = getRequiredScriptProperty("SPREADSHEET_ID");
 const DEFAULT_SORTEO = "Rifa"; // Nombre de la pestaña/sorteo usado si no se indica ninguno
+const DEFAULT_TICKET_PRICE = 5000;
 const CONFIG_SHEET_NAME = "_Sorteos"; // Lista central de sorteos y su visibilidad
 const LEGACY_CONFIG_SHEET_NAME = "_Config"; // Configuración anterior, ignorada por la aplicación
 const AUTH_SHEET_NAME = "_Auth"; // Pestaña oculta con la contraseña de administrador
@@ -63,7 +64,7 @@ function doGet(e) {
   }
 
   if (action === "createSorteo") {
-    return jsonResponse(createSorteo(e.parameter.nombre, e.parameter.cantidad, e.parameter.token));
+    return jsonResponse(createSorteo(e.parameter.nombre, e.parameter.cantidad, e.parameter.token, e.parameter.precio));
   }
 
   if (action === "deleteSorteo") {
@@ -108,7 +109,7 @@ function doPost(e) {
   }
 
   if (action === "createSorteo") {
-    return jsonResponse(createSorteo(postData.nombre, postData.cantidad, postData.token));
+    return jsonResponse(createSorteo(postData.nombre, postData.cantidad, postData.token, postData.precio));
   }
 
   if (action === "deleteSorteo") {
@@ -161,6 +162,7 @@ function getOrCreateConfigSheet(spreadsheet) {
       .forEach(s => sheet.appendRow([s.getName(), false, "Activo"]));
   }
 
+  if (sheet.getLastColumn() < 4) sheet.getRange(1, 4).setValue("Valor por número");
   return sheet;
 }
 
@@ -173,12 +175,12 @@ function getConfigMap(spreadsheet) {
   const map = {};
 
   if (lastRow > 1) {
-    const values = sheet.getRange(2, 1, lastRow - 1, 3).getValues();
+    const values = sheet.getRange(2, 1, lastRow - 1, 4).getValues();
     values.forEach(row => {
       if (row[0]) {
         map[row[0]] = {
           visible: row[1] === true || row[1] === "TRUE",
-          estado: row[2] || "Activo"
+          estado: row[2] || "Activo", precio: Number(row[3]) || DEFAULT_TICKET_PRICE
         };
       }
     });
@@ -193,7 +195,7 @@ function getConfigMap(spreadsheet) {
  * @param {boolean} visible Si debe verse en modo espectador (opcional, no se toca si es undefined)
  * @param {string} estado "Activo" o "Terminada" (opcional, no se toca si es undefined)
  */
-function upsertSorteoConfig(nombre, visible, estado) {
+function upsertSorteoConfig(nombre, visible, estado, precio) {
   const sheet = getOrCreateConfigSheet();
   const lastRow = sheet.getLastRow();
 
@@ -204,12 +206,13 @@ function upsertSorteoConfig(nombre, visible, estado) {
         const rowIndex = i + 2;
         if (visible !== undefined) sheet.getRange(rowIndex, 2).setValue(visible);
         if (estado !== undefined) sheet.getRange(rowIndex, 3).setValue(estado);
+        if (precio !== undefined) sheet.getRange(rowIndex, 4).setValue(precio);
         return;
       }
     }
   }
 
-  sheet.appendRow([nombre, visible !== undefined ? visible : true, estado || "Activo"]);
+  sheet.appendRow([nombre, visible !== undefined ? visible : true, estado || "Activo", precio || DEFAULT_TICKET_PRICE]);
 }
 
 /**
@@ -304,7 +307,7 @@ function listSorteos(token) {
     const detalle = sheets.map(s => {
       const nombre = s.getName();
       const cfg = configMap[nombre] || { visible: true, estado: "Activo" };
-      return { nombre: nombre, visible: cfg.visible, estado: cfg.estado };
+      return { nombre: nombre, visible: cfg.visible, estado: cfg.estado, precio: cfg.precio || DEFAULT_TICKET_PRICE };
     });
 
     if (isAdmin) {
@@ -398,7 +401,7 @@ function getOrCreateSorteoSheet(sorteo) {
  * @param {string} nombre Nombre del nuevo sorteo
  * @param {number} cantidad Cantidad de números a generar (1 a N)
  */
-function createSorteoSheet(nombre, cantidad) {
+function createSorteoSheet(nombre, cantidad, precio) {
   const spreadsheet = SpreadsheetApp.openById(SPREADSHEET_ID);
   const sheet = spreadsheet.insertSheet(nombre);
   sheet.appendRow(["Numero", "Estado", "Nombre", "Telefono", "MedioPago", "Fecha"]);
@@ -410,7 +413,7 @@ function createSorteoSheet(nombre, cantidad) {
   }
   sheet.getRange(2, 1, rows.length, 6).setValues(rows);
 
-  upsertSorteoConfig(nombre, true, "Activo");
+  upsertSorteoConfig(nombre, true, "Activo", precio || DEFAULT_TICKET_PRICE);
 
   return sheet;
 }
@@ -421,7 +424,7 @@ function createSorteoSheet(nombre, cantidad) {
  * @param {number} cantidad Cantidad de números del sorteo
  * @param {string} token Token de sesión de administración
  */
-function createSorteo(nombre, cantidad, token) {
+function createSorteo(nombre, cantidad, token, precio) {
   if (token !== ADMIN_TOKEN) {
     return { success: false, error: "Acceso no autorizado." };
   }
@@ -446,7 +449,8 @@ function createSorteo(nombre, cantidad, token) {
       return { success: false, error: "Ya existe un sorteo con ese nombre." };
     }
 
-    createSorteoSheet(nombreLimpio, cantidadNum);
+    const precioNum = parseInt(precio) || DEFAULT_TICKET_PRICE;
+    createSorteoSheet(nombreLimpio, cantidadNum, precioNum);
     return { success: true, message: `Sorteo "${nombreLimpio}" creado con ${cantidadNum} números.`, sorteo: nombreLimpio };
   } catch (err) {
     return { success: false, error: err.toString() };
