@@ -22,6 +22,12 @@ function getRequiredScriptProperty(name) {
   return value;
 }
 
+/** Ejecuta esta función una vez desde el editor de Apps Script para autorizar
+ * el guardado de fotografías de premios en Google Drive. */
+function autorizarFotosPremios() {
+  return DriveApp.getRootFolder().getName();
+}
+
 /**
  * Carga y renderiza la página web principal del sorteo
  * O responde peticiones GET externas de la API
