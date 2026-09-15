@@ -69,9 +69,9 @@ async function renderPublicRaffles(raffles) {
   const container = document.getElementById('public-raffles-container');
   const legacyGrid = document.getElementById('tickets-container');
   const legend = document.querySelector('#view-public > .legend');
-  if (!container || isAdminLoggedIn()) { if (container) container.innerHTML = ''; if (legacyGrid) legacyGrid.closest('.grid-container').style.display = ''; if (legend) legend.style.display = ''; return; }
-  if (legacyGrid) legacyGrid.closest('.grid-container').style.display = 'none';
-  if (legend) legend.style.display = 'none';
+  if (!container || isAdminLoggedIn()) { if (container) container.innerHTML = ''; if (legacyGrid) legacyGrid.closest('.grid-container').style.removeProperty('display'); if (legend) legend.style.removeProperty('display'); return; }
+  if (legacyGrid) legacyGrid.closest('.grid-container').style.setProperty('display', 'none', 'important');
+  if (legend) legend.style.setProperty('display', 'none', 'important');
   container.innerHTML = '<p class="raffle-history-empty">Cargando sorteos publicados…</p>';
   const cards = await Promise.all(raffles.map(async raffle => {
     const data = await apiGetTickets(raffle.nombre);
