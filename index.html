@@ -27,14 +27,7 @@
         <p class='subtitle' id='raffle-subtitle'>Cada número suma. Apoya a Inter Chile y sé parte del próximo gran triunfo.</p>
         <div class='hero-actions'>
           <a class='hero-cta' href='#view-public'>Elige tu número <span>↓</span></a>
-          <div class='raffle-switcher'>
-            <label for='sorteo-select'>Sorteo activo</label>
-            <select id='sorteo-select' onchange='handleSorteoChange()'></select>
-            <span class='active-raffle-name' id='active-raffle-name'>Cargando sorteo…</span>
-          </div>
-          <button type='button' class='active-raffle-delete admin-only-ui' style='display: none;' onclick='handleDeleteSorteo()'>
-            Eliminar sorteo activo
-          </button>
+          <button type='button' class='hero-cta hero-raffles-link' onclick='openRaffleHub()'>Mis sorteos <span>→</span></button>
         </div>
       </div>
       <div class='hero-art' aria-hidden='true'>
@@ -79,6 +72,9 @@
     <button class='nav-btn' id='nav-accounting-tab' style='display: none;' onclick='switchTab("accounting-view")'>
       <span>📊</span> Contabilidad
     </button>
+    <button class='nav-btn' id='nav-raffles-tab' style='display: none;' onclick='openRaffleHub()'>
+      <span>🏆</span> Mis sorteos
+    </button>
     <button class='nav-btn' id='nav-login-tab' onclick='switchTab("login-view")'>
       <span>🔒</span> Modo Admin
     </button>
@@ -122,6 +118,37 @@
       </div>
     </div>
   </main>
+
+  <!-- PESTAÑA: HISTORIAL Y GESTIÓN DE SORTEOS (SOLO ADMIN) -->
+  <section class='view-section' id='view-raffles'>
+    <div class='raffle-hub-header'>
+      <div>
+        <p class='eyebrow'><span></span> Base de datos de sorteos</p>
+        <h2>Mis sorteos e historial</h2>
+        <p>Cada tarjeta corresponde a una pestaña de Google Sheets. Abre una para administrar sus números, compradores y contabilidad.</p>
+      </div>
+      <button type='button' class='btn-secondary' onclick='refreshSorteosList()'>↻ Actualizar lista</button>
+    </div>
+    <div class='raffle-create-card'>
+      <h3>Crear una nueva rifa</h3>
+      <form id='new-sorteo-form' onsubmit='handleCreateSorteo(event)'>
+        <div class='form-row'>
+          <div class='form-group'>
+            <label for='new-sorteo-name'>Nombre de la rifa</label>
+            <input type='text' id='new-sorteo-name' placeholder='Ej. Rifa Septiembre 2026' required>
+          </div>
+          <div class='form-group'>
+            <label for='new-sorteo-count'>Cantidad de números</label>
+            <input type='number' id='new-sorteo-count' value='100' min='1' max='1000' required>
+          </div>
+        </div>
+        <button type='submit' class='btn-primary'>Crear y abrir rifa</button>
+      </form>
+    </div>
+    <div class='raffle-history-grid' id='sorteo-history-list'>
+      <p class='raffle-history-empty'>Cargando historial…</p>
+    </div>
+  </section>
 
   <!-- PESTAÑA 2: PANEL DE CONTABILIDAD & REGISTRO (SOLO ADMIN) -->
   <section class='view-section' id='view-accounting'>
@@ -217,44 +244,7 @@
         Cerrar Sesión Administrador
       </button>
 
-      <!-- Gestión de Sorteos (una hoja, múltiples pestañas de sorteo) -->
-      <div class='api-config-card'>
-        <h4>🏆 Gestión de Sorteos</h4>
-        <p class='api-config-desc'>
-          Todos los sorteos viven en la misma Hoja de Cálculo, cada uno como una pestaña independiente. Crea uno nuevo o elimina el que tienes seleccionado arriba en "Sorteo activo".
-        </p>
-        <form id='new-sorteo-form' onsubmit='handleCreateSorteo(event)' style='text-align: left;'>
-          <div class='form-row'>
-            <div class='form-group'>
-              <label for='new-sorteo-name'>Nombre del nuevo sorteo</label>
-              <input type='text' id='new-sorteo-name' placeholder='Ej. Rifa Septiembre 2026' required>
-            </div>
-            <div class='form-group'>
-              <label for='new-sorteo-count'>Cantidad de números</label>
-              <input type='number' id='new-sorteo-count' value='100' min='1' max='1000' required>
-            </div>
-          </div>
-          <div style='display: flex; gap: 1rem;'>
-            <button type='submit' class='btn-primary' style='font-size: 0.8rem; padding: 0.6rem;'>Crear Sorteo</button>
-          </div>
-        </form>
-
-        <div class='accounting-table-container' style='margin-top: 1.5rem;'>
-          <table id='sorteo-management-table'>
-            <thead>
-              <tr>
-                <th>Sorteo</th>
-                <th>Estado</th>
-                <th>Visibilidad</th>
-                <th>Acciones</th>
-              </tr>
-            </thead>
-            <tbody id='sorteo-management-body'>
-              <!-- Filas dinámicas -->
-            </tbody>
-          </table>
-        </div>
-      </div>
+      <button class='btn-primary' onclick='openRaffleHub()'>🏆 Ir a Mis sorteos e historial</button>
     </div>
   </section>
 

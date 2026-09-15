@@ -25,6 +25,7 @@ function checkAdminSession() {
   const loginCard = document.getElementById('login-card-container');
   const sessionContainer = document.getElementById('admin-session-container');
   const accountingTab = document.getElementById('nav-accounting-tab');
+  const rafflesTab = document.getElementById('nav-raffles-tab');
   const adminOnlyUis = document.querySelectorAll('.admin-only-ui');
   const scoreboard = document.getElementById('scoreboard-container');
 
@@ -32,12 +33,14 @@ function checkAdminSession() {
     if (loginCard) loginCard.style.display = 'none';
     if (sessionContainer) sessionContainer.style.display = 'block';
     if (accountingTab) accountingTab.style.display = 'flex';
+    if (rafflesTab) rafflesTab.style.display = 'flex';
     if (scoreboard) scoreboard.style.display = '';
     adminOnlyUis.forEach(ui => ui.style.display = 'flex');
   } else {
     if (loginCard) loginCard.style.display = 'block';
     if (sessionContainer) sessionContainer.style.display = 'none';
     if (accountingTab) accountingTab.style.display = 'none';
+    if (rafflesTab) rafflesTab.style.display = 'none';
     if (scoreboard) scoreboard.style.display = 'none';
     adminOnlyUis.forEach(ui => ui.style.display = 'none');
   }
@@ -67,7 +70,7 @@ async function handleLogin(e) {
       checkAdminSession();
       await refreshSorteosList();
       await refreshRaffleData();
-      switchTab('public-view');
+      switchTab('raffles-view');
       alert('⚽ ¡Acceso Autorizado! Bienvenido a la cancha técnica del sorteo.');
     } else {
       alert('❌ Contraseña incorrecta. Inténtalo de nuevo.');
@@ -439,29 +442,33 @@ async function handleDeleteSorteo(nombre) {
  * Renderiza la tabla de gestión de sorteos (solo Admin): estado, visibilidad y acciones
  */
 function renderSorteoManagement() {
-  const tbody = document.getElementById('sorteo-management-body');
-  if (!tbody) return;
+  const container = document.getElementById('sorteo-history-list');
+  if (!container) return;
 
-  tbody.innerHTML = '';
+  container.innerHTML = '';
+  if (!sorteosDetalle.length) {
+    container.innerHTML = '<p class="raffle-history-empty">Aún no hay rifas registradas. Crea la primera desde arriba.</p>';
+    return;
+  }
 
   sorteosDetalle.forEach(s => {
-    const row = document.createElement('tr');
+    const card = document.createElement('article');
+    card.className = 'raffle-history-card';
     const esActivo = s.nombre === currentSorteo;
 
     const estaPublicado = s.visible && s.estado === 'Activo';
-    row.innerHTML = `
-      <td style='font-weight: 600;'>${s.nombre}${esActivo ? " <span style='color: var(--color-grass-neon); font-size: 0.75rem;'>(viendo)</span>" : ''}</td>
-      <td><span class='badge-status ${s.estado === 'Terminada' ? 'pagado' : 'disponible'}'>${s.estado}</span></td>
-      <td>${estaPublicado ? '🟢 Activo para público' : '⚪ Inactivo para público'}</td>
-      <td style='display: flex; gap: 0.4rem; flex-wrap: wrap;'>
-        <button type='button' class='btn-secondary' style='font-size: 0.7rem; padding: 0.4rem 0.6rem; margin-top:0;' onclick='handleViewSorteoFromTable("${s.nombre}")'>Ver</button>
-        <button type='button' class='btn-secondary ${estaPublicado ? 'btn-danger' : ''}' style='font-size: 0.7rem; padding: 0.4rem 0.6rem; margin-top:0;' onclick='handleSetSorteoActive("${s.nombre}", ${estaPublicado})'>${estaPublicado ? 'Desactivar público' : 'Activar público'}</button>
-        <button type='button' class='btn-secondary' style='font-size: 0.7rem; padding: 0.4rem 0.6rem; margin-top:0;' onclick='handleToggleEstado("${s.nombre}", "${s.estado}")'>${s.estado === 'Terminada' ? 'Reactivar' : 'Marcar Terminada'}</button>
-        <button type='button' class='btn-secondary btn-danger' style='font-size: 0.7rem; padding: 0.4rem 0.6rem; margin-top:0;' onclick='handleDeleteSorteo("${s.nombre}")'>Eliminar</button>
-      </td>
+    card.innerHTML = `
+      <div class='raffle-card-topline'><span>${estaPublicado ? '● PUBLICADO' : '○ ARCHIVADO'}</span><span>${s.estado}</span></div>
+      <h3>${s.nombre}</h3>
+      <p>${esActivo ? 'Rifa abierta actualmente. Puedes registrar compradores y modificar sus números.' : 'Historial disponible en Google Sheets.'}</p>
+      <div class='raffle-card-actions'>
+        <button type='button' class='btn-primary' onclick='handleOpenRaffle("${s.nombre}")'>Abrir y administrar</button>
+        <button type='button' class='btn-secondary' onclick='handleSetSorteoActive("${s.nombre}", ${estaPublicado})'>${estaPublicado ? 'Desactivar público' : 'Activar público'}</button>
+        <button type='button' class='btn-secondary' onclick='handleToggleEstado("${s.nombre}", "${s.estado}")'>${s.estado === 'Terminada' ? 'Reactivar' : 'Finalizar'}</button>
+        <button type='button' class='btn-secondary btn-danger' onclick='handleDeleteSorteo("${s.nombre}")'>Eliminar</button>
+      </div>
     `;
-
-    tbody.appendChild(row);
+    container.appendChild(card);
   });
 }
 
@@ -475,6 +482,11 @@ async function handleViewSorteoFromTable(nombre) {
   renderSorteoManagement();
   clearSelection();
   await refreshRaffleData();
+}
+
+async function handleOpenRaffle(nombre) {
+  await handleViewSorteoFromTable(nombre);
+  switchTab('public-view');
 }
 
 /**

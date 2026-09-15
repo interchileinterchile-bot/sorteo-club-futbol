@@ -68,45 +68,8 @@ async function refreshSorteosList() {
  * Renderiza el selector de sorteo en el encabezado
  */
 function renderSorteoSelector() {
-  const select = document.getElementById('sorteo-select');
-  if (!select) return;
-  const activeName = document.getElementById('active-raffle-name');
-
-  select.innerHTML = '';
-  if (sorteosDisponibles.length === 0) {
-    const option = document.createElement('option');
-    option.innerText = 'Sin sorteos disponibles';
-    option.disabled = true;
-    option.selected = true;
-    select.appendChild(option);
-    select.disabled = true;
-    if (activeName) activeName.innerText = 'Aún no se pudo cargar un sorteo';
-    return;
-  }
-
-  select.disabled = false;
-  sorteosDisponibles.forEach(nombre => {
-    const option = document.createElement('option');
-    option.value = nombre;
-    option.innerText = nombre;
-    if (nombre === currentSorteo) option.selected = true;
-    select.appendChild(option);
-  });
-
-  if (activeName) activeName.innerText = currentSorteo ? `En juego: ${currentSorteo}` : 'Sin sorteo seleccionado';
-}
-
-/**
- * Cambia el sorteo activo desde el selector
- */
-async function handleSorteoChange() {
-  const select = document.getElementById('sorteo-select');
-  if (!select) return;
-
-  currentSorteo = select.value;
-  localStorage.setItem(CURRENT_SORTEO_KEY, currentSorteo);
-  clearSelection();
-  await refreshRaffleData();
+  const title = document.getElementById('raffle-title');
+  if (title && currentSorteo) title.dataset.currentRaffle = currentSorteo;
 }
 
 /**
@@ -245,6 +208,9 @@ function switchTab(tabId) {
   } else if (tabId === 'login-view') {
     activeBtn = document.getElementById('nav-login-tab');
     document.getElementById('view-login').classList.add('active');
+  } else if (tabId === 'raffles-view') {
+    activeBtn = document.getElementById('nav-raffles-tab');
+    document.getElementById('view-raffles').classList.add('active');
   }
   
   if (activeBtn) activeBtn.classList.add('active');
@@ -253,6 +219,15 @@ function switchTab(tabId) {
   if (tabId !== 'public-view') {
     clearSelection();
   }
+}
+
+function openRaffleHub() {
+  if (!isAdminLoggedIn()) {
+    switchTab('login-view');
+    return;
+  }
+  switchTab('raffles-view');
+  refreshSorteosList();
 }
 
 /* --- UTILIDADES --- */
