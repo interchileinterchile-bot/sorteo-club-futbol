@@ -277,6 +277,12 @@ function setSorteoVisibility(nombre, visible, token) {
       return { success: false, error: "El sorteo indicado no existe." };
     }
 
+    // Solo puede existir un sorteo público activo a la vez.
+    if (visible) {
+      const config = getOrCreateConfigSheet(spreadsheet);
+      const rows = config.getRange(2, 1, Math.max(config.getLastRow() - 1, 1), 3).getValues();
+      rows.forEach((row, i) => { if (row[0] && row[0] !== nombre) config.getRange(i + 2, 2).setValue(false); });
+    }
     upsertSorteoConfig(nombre, !!visible, undefined);
     return { success: true, message: visible ? `"${nombre}" ahora es visible para el público.` : `"${nombre}" ahora está oculto para el público.` };
   } catch (err) {

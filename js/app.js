@@ -67,7 +67,11 @@ async function refreshSorteosList() {
 
 async function renderPublicRaffles(raffles) {
   const container = document.getElementById('public-raffles-container');
-  if (!container || isAdminLoggedIn()) { if (container) container.innerHTML = ''; return; }
+  const legacyGrid = document.getElementById('tickets-container');
+  const legend = document.querySelector('#view-public > .legend');
+  if (!container || isAdminLoggedIn()) { if (container) container.innerHTML = ''; if (legacyGrid) legacyGrid.closest('.grid-container').style.display = ''; if (legend) legend.style.display = ''; return; }
+  if (legacyGrid) legacyGrid.closest('.grid-container').style.display = 'none';
+  if (legend) legend.style.display = 'none';
   container.innerHTML = '<p class="raffle-history-empty">Cargando sorteos publicados…</p>';
   const cards = await Promise.all(raffles.map(async raffle => {
     const data = await apiGetTickets(raffle.nombre);
