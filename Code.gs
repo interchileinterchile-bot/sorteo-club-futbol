@@ -22,10 +22,9 @@ function getRequiredScriptProperty(name) {
   return value;
 }
 
-/** Ejecuta esta función una vez desde el editor de Apps Script para autorizar
- * el guardado de fotografías de premios en Google Drive. */
+/** Verifica la autorización de la hoja sin depender de Google Drive. */
 function autorizarFotosPremios() {
-  return DriveApp.getRootFolder().getName();
+  return SpreadsheetApp.openById(SPREADSHEET_ID).getName();
 }
 
 /**
@@ -300,16 +299,11 @@ function listPremios(nombre) {
 
 function savePrizeImage(nombre, imageData) {
   if (!imageData) return "";
-  const match = String(imageData).match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/);
-  if (!match) throw new Error("Formato de imagen inválido.");
-  const bytes = Utilities.base64Decode(match[2]);
-  if (bytes.length > 4 * 1024 * 1024) throw new Error("La imagen supera 4 MB.");
-  const folders = DriveApp.getFoldersByName("Premios Sorteos Inter Chile");
-  const folder = folders.hasNext() ? folders.next() : DriveApp.createFolder("Premios Sorteos Inter Chile");
-  const extension = match[1].split('/')[1].replace('jpeg', 'jpg');
-  const file = folder.createFile(Utilities.newBlob(bytes, match[1], `${nombre}-${Date.now()}.${extension}`));
-  file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
-  return `https://drive.google.com/uc?export=view&id=${file.getId()}`;
+  if (!/^data:image\/[a-zA-Z0-9.+-]+;base64,/.test(String(imageData))) throw new Error("Formato de imagen inválido.");
+  // Google Sheets permite hasta 50.000 caracteres por celda. El navegador
+  // comprime la foto antes de enviarla para mantenerla bajo este límite.
+  if (String(imageData).length > 48000) throw new Error("La foto es demasiado grande. Intenta nuevamente: la aplicación la comprimirá automáticamente.");
+  return String(imageData);
 }
 
 function savePremio(nombre, titulo, descripcion, imageData, token) {
@@ -353,22 +347,14 @@ function uploadPrizeImage(nombre, descripcion, imageData, token) {
   if (token !== ADMIN_TOKEN) return { success: false, error: "Acceso no autorizado." };
   if (!nombre || !imageData) return { success: false, error: "Falta la imagen o el sorteo." };
   try {
-    const match = String(imageData).match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/);
-    if (!match) return { success: false, error: "Formato de imagen inválido." };
-    const bytes = Utilities.base64Decode(match[2]);
-    if (bytes.length > 4 * 1024 * 1024) return { success: false, error: "La imagen supera 4 MB." };
-    const folders = DriveApp.getFoldersByName("Premios Sorteos Inter Chile");
-    const folder = folders.hasNext() ? folders.next() : DriveApp.createFolder("Premios Sorteos Inter Chile");
-    const extension = match[1].split('/')[1].replace('jpeg', 'jpg');
-    const file = folder.createFile(Utilities.newBlob(bytes, match[1], `${nombre}-${Date.now()}.${extension}`));
-    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    const image = savePrizeImage(nombre, imageData);
     const sheet = getOrCreateConfigSheet();
     const names = sheet.getRange(2, 1, Math.max(sheet.getLastRow() - 1, 1), 1).getValues();
     const row = names.findIndex(r => r[0] === nombre) + 2;
     if (row < 2) return { success: false, error: "No se encontró la rifa." };
     sheet.getRange(row, 5).setValue(descripcion || "");
-    sheet.getRange(row, 6).setValue(`https://drive.google.com/uc?export=view&id=${file.getId()}`);
-    return { success: true, imagen: `https://drive.google.com/uc?export=view&id=${file.getId()}` };
+    sheet.getRange(row, 6).setValue(image);
+    return { success: true, imagen: image };
   } catch (err) { return { success: false, error: err.toString() }; }
 }
 

@@ -513,13 +513,37 @@ function escapeHtml(value) {
   return element.innerHTML;
 }
 
-function readImageAsDataUrl(file) {
-  return new Promise((resolve, reject) => {
+async function readImageAsDataUrl(file) {
+  const original = await new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => resolve(reader.result);
     reader.onerror = () => reject(new Error('No se pudo leer la imagen.'));
     reader.readAsDataURL(file);
   });
+  const image = await new Promise((resolve, reject) => {
+    const element = new Image();
+    element.onload = () => resolve(element);
+    element.onerror = () => reject(new Error('No se pudo procesar la imagen.'));
+    element.src = original;
+  });
+  // Las fotos se guardan en una celda de Sheets (límite 50.000 caracteres).
+  // Se crea una miniatura nítida y liviana para publicación móvil.
+  let maxSide = 420;
+  let quality = 0.72;
+  let result = original;
+  for (let attempt = 0; attempt < 8; attempt++) {
+    const scale = Math.min(1, maxSide / Math.max(image.naturalWidth, image.naturalHeight));
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+    canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+    canvas.getContext('2d').drawImage(image, 0, 0, canvas.width, canvas.height);
+    result = canvas.toDataURL('image/jpeg', quality);
+    if (result.length <= 45000) return result;
+    maxSide = Math.round(maxSide * 0.78);
+    quality = Math.max(0.32, quality - 0.08);
+  }
+  if (result.length > 48000) throw new Error('No fue posible comprimir la foto lo suficiente. Usa una imagen más simple o recórtala.');
+  return result;
 }
 
 async function openPrizeManager(nombre) {
