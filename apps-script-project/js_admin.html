@@ -434,13 +434,14 @@ function renderSorteoManagement() {
     const row = document.createElement('tr');
     const esActivo = s.nombre === currentSorteo;
 
+    const estaPublicado = s.visible && s.estado === 'Activo';
     row.innerHTML = `
       <td style='font-weight: 600;'>${s.nombre}${esActivo ? " <span style='color: var(--color-grass-neon); font-size: 0.75rem;'>(viendo)</span>" : ''}</td>
       <td><span class='badge-status ${s.estado === 'Terminada' ? 'pagado' : 'disponible'}'>${s.estado}</span></td>
-      <td>${s.visible ? '👁️ Visible' : '🚫 Oculto'}</td>
+      <td>${estaPublicado ? '🟢 Activo para público' : '⚪ Inactivo para público'}</td>
       <td style='display: flex; gap: 0.4rem; flex-wrap: wrap;'>
         <button type='button' class='btn-secondary' style='font-size: 0.7rem; padding: 0.4rem 0.6rem; margin-top:0;' onclick='handleViewSorteoFromTable("${s.nombre}")'>Ver</button>
-        <button type='button' class='btn-secondary' style='font-size: 0.7rem; padding: 0.4rem 0.6rem; margin-top:0;' onclick='handleToggleVisibility("${s.nombre}", ${s.visible})'>${s.visible ? 'Ocultar' : 'Mostrar'}</button>
+        <button type='button' class='btn-secondary ${estaPublicado ? 'btn-danger' : ''}' style='font-size: 0.7rem; padding: 0.4rem 0.6rem; margin-top:0;' onclick='handleSetSorteoActive("${s.nombre}", ${estaPublicado})'>${estaPublicado ? 'Desactivar público' : 'Activar público'}</button>
         <button type='button' class='btn-secondary' style='font-size: 0.7rem; padding: 0.4rem 0.6rem; margin-top:0;' onclick='handleToggleEstado("${s.nombre}", "${s.estado}")'>${s.estado === 'Terminada' ? 'Reactivar' : 'Marcar Terminada'}</button>
         <button type='button' class='btn-secondary btn-danger' style='font-size: 0.7rem; padding: 0.4rem 0.6rem; margin-top:0;' onclick='handleDeleteSorteo("${s.nombre}")'>Eliminar</button>
       </td>
@@ -478,6 +479,37 @@ async function handleToggleVisibility(nombre, visibleActual) {
     }
   } catch (error) {
     alert('Ocurrió un error al cambiar la visibilidad del sorteo.');
+    console.error(error);
+  } finally {
+    hideLoading();
+  }
+}
+
+/**
+ * Publica o retira un sorteo de la vista pública. Publicar también lo deja
+ * en estado Activo para que aparezca inmediatamente en el selector.
+ */
+async function handleSetSorteoActive(nombre, estaPublicado) {
+  const activar = !estaPublicado;
+  const mensaje = activar
+    ? `¿Activar "${nombre}" para que se vea en el sitio público?`
+    : `¿Desactivar "${nombre}"? Dejará de aparecer para el público.`;
+
+  if (!confirm(mensaje)) return;
+
+  const token = getAdminToken();
+  showLoading();
+  try {
+    if (activar) {
+      const estado = await apiSetSorteoEstado(nombre, 'Activo', token);
+      if (!estado.success) throw new Error(estado.error || 'No se pudo activar el estado.');
+    }
+    const resultado = await apiSetSorteoVisibility(nombre, activar, token);
+    if (!resultado.success) throw new Error(resultado.error || 'No se pudo cambiar la publicación.');
+    await refreshSorteosList();
+    alert(activar ? `✅ "${nombre}" ya está activo para el público.` : `✅ "${nombre}" fue desactivado para el público.`);
+  } catch (error) {
+    alert('No se pudo actualizar el estado público del sorteo.');
     console.error(error);
   } finally {
     hideLoading();

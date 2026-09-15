@@ -310,7 +310,9 @@ function listSorteos(token) {
     if (isAdmin) {
       return { sorteos: detalle };
     } else {
-      const publicos = detalle.filter(d => d.visible).map(d => d.nombre);
+      const publicos = detalle
+        .filter(d => d.visible && d.estado === "Activo")
+        .map(d => d.nombre);
       return { sorteos: publicos };
     }
   } catch (err) {
