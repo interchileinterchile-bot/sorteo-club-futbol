@@ -43,8 +43,9 @@ async function refreshSorteosList() {
       sorteosDisponibles = lista.map(s => s.nombre);
       renderSorteoManagement();
     } else {
-      sorteosDetalle = [];
-      sorteosDisponibles = lista;
+      sorteosDetalle = lista.map(s => typeof s === 'string' ? { nombre: s } : s);
+      sorteosDisponibles = sorteosDetalle.map(s => s.nombre);
+      renderPublicRaffles(sorteosDetalle);
     }
 
     const savedSorteo = localStorage.getItem(CURRENT_SORTEO_KEY);
@@ -62,6 +63,19 @@ async function refreshSorteosList() {
     currentSorteo = null;
     renderSorteoSelector();
   }
+}
+
+async function renderPublicRaffles(raffles) {
+  const container = document.getElementById('public-raffles-container');
+  if (!container || isAdminLoggedIn()) { if (container) container.innerHTML = ''; return; }
+  container.innerHTML = '<p class="raffle-history-empty">Cargando sorteos publicados…</p>';
+  const cards = await Promise.all(raffles.map(async raffle => {
+    const data = await apiGetTickets(raffle.nombre);
+    const tickets = (data.tickets || []).map(t => `<span class="ticket ${String(t.estado).toLowerCase()}"><b>#${t.numero}</b><small>${t.estado}</small></span>`).join('');
+    const image = raffle.imagen ? `<img src="${raffle.imagen}" alt="Premio ${raffle.nombre}" style="width:100%;max-height:260px;object-fit:cover;margin:1rem 0;">` : '';
+    return `<article class="grid-container" style="margin-bottom:2rem"><h2>${raffle.nombre}</h2>${image}<p style="color:#c8d8f3">${raffle.descripcion || 'Participa y apoya al club.'}</p><p style="margin:1rem 0;color:#80b1ff;font-weight:800">Valor por número: ${formatCurrency(raffle.precio || 5000)}</p><div class="tickets-grid">${tickets}</div></article>`;
+  }));
+  container.innerHTML = cards.join('') || '<p class="raffle-history-empty">No hay sorteos publicados.</p>';
 }
 
 /**
