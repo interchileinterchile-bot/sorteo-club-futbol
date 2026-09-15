@@ -8,11 +8,12 @@ const SPREADSHEET_ID = getRequiredScriptProperty("SPREADSHEET_ID");
 const DEFAULT_SORTEO = "Rifa"; // Nombre de la pestaña/sorteo usado si no se indica ninguno
 const DEFAULT_TICKET_PRICE = 5000;
 const CONFIG_SHEET_NAME = "_Sorteos"; // Lista central de sorteos y su visibilidad
+const PRIZES_SHEET_NAME = "_Premios"; // Premios asociados a cada rifa
 const LEGACY_CONFIG_SHEET_NAME = "_Config"; // Configuración anterior, ignorada por la aplicación
 const AUTH_SHEET_NAME = "_Auth"; // Pestaña oculta con la contraseña de administrador
 
 function isSystemSheet(name) {
-  return name === CONFIG_SHEET_NAME || name === LEGACY_CONFIG_SHEET_NAME || name === AUTH_SHEET_NAME;
+  return name === CONFIG_SHEET_NAME || name === PRIZES_SHEET_NAME || name === LEGACY_CONFIG_SHEET_NAME || name === AUTH_SHEET_NAME;
 }
 
 function getRequiredScriptProperty(name) {
@@ -47,6 +48,11 @@ function doGet(e) {
     }
   }
 
+  if (action === "listPremios") {
+    try { return jsonResponse(listPremios(e.parameter.nombre)); }
+    catch (err) { return jsonResponse({ error: "No se pudieron listar los premios: " + err.message }); }
+  }
+
   // Las acciones que modifican datos también se sirven por GET (en vez de POST) porque
   // las respuestas de doPost pasan por una redirección interna de Google que resultó
   // ser lenta e inestable; doGet responde directo y de forma mucho más confiable.
@@ -78,6 +84,8 @@ function doGet(e) {
   if (action === "setSorteoEstado") {
     return jsonResponse(setSorteoEstado(e.parameter.nombre, e.parameter.estado, e.parameter.token));
   }
+
+  if (action === "deletePremio") return jsonResponse(deletePremio(e.parameter.id, e.parameter.token));
 
   // DE LO CONTRARIO, RENDERIZAR LA WEB APP NATIVA
   const template = HtmlService.createTemplateFromFile("index");
@@ -119,6 +127,8 @@ function doPost(e) {
   if (action === "uploadPrizeImage") {
     return jsonResponse(uploadPrizeImage(postData.nombre, postData.descripcion, postData.imagen, postData.token));
   }
+
+  if (action === "savePremio") return jsonResponse(savePremio(postData.nombre, postData.titulo, postData.descripcion, postData.imagen, postData.token));
 
   if (action === "setSorteoVisibility") {
     return jsonResponse(setSorteoVisibility(postData.nombre, postData.visible, postData.token));
@@ -237,6 +247,80 @@ function removeSorteoConfig(nombre) {
   }
 }
 
+/* --- PREMIOS POR RIFA --- */
+function getOrCreatePrizesSheet(spreadsheet) {
+  spreadsheet = spreadsheet || SpreadsheetApp.openById(SPREADSHEET_ID);
+  let sheet = spreadsheet.getSheetByName(PRIZES_SHEET_NAME);
+  if (!sheet) {
+    sheet = spreadsheet.insertSheet(PRIZES_SHEET_NAME);
+    sheet.appendRow(["ID", "Sorteo", "Orden", "Premio", "Descripción", "Imagen"]);
+    sheet.hideSheet();
+  }
+  return sheet;
+}
+
+function listPremios(nombre) {
+  const sheet = getOrCreatePrizesSheet();
+  const lastRow = sheet.getLastRow();
+  if (lastRow <= 1) return { premios: [] };
+  const premios = sheet.getRange(2, 1, lastRow - 1, 6).getValues()
+    .filter(row => row[1] === nombre)
+    .sort((a, b) => Number(a[2]) - Number(b[2]))
+    .map(row => ({ id: row[0], sorteo: row[1], orden: Number(row[2]), titulo: row[3] || "Premio", descripcion: row[4] || "", imagen: row[5] || "" }));
+  return { premios: premios };
+}
+
+function savePrizeImage(nombre, imageData) {
+  if (!imageData) return "";
+  const match = String(imageData).match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/);
+  if (!match) throw new Error("Formato de imagen inválido.");
+  const bytes = Utilities.base64Decode(match[2]);
+  if (bytes.length > 4 * 1024 * 1024) throw new Error("La imagen supera 4 MB.");
+  const folders = DriveApp.getFoldersByName("Premios Sorteos Inter Chile");
+  const folder = folders.hasNext() ? folders.next() : DriveApp.createFolder("Premios Sorteos Inter Chile");
+  const extension = match[1].split('/')[1].replace('jpeg', 'jpg');
+  const file = folder.createFile(Utilities.newBlob(bytes, match[1], `${nombre}-${Date.now()}.${extension}`));
+  file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+  return `https://drive.google.com/uc?export=view&id=${file.getId()}`;
+}
+
+function savePremio(nombre, titulo, descripcion, imageData, token) {
+  if (token !== ADMIN_TOKEN) return { success: false, error: "Acceso no autorizado." };
+  if (!nombre || !titulo || !String(titulo).trim()) return { success: false, error: "Indica el nombre del premio." };
+  try {
+    const spreadsheet = SpreadsheetApp.openById(SPREADSHEET_ID);
+    if (!spreadsheet.getSheetByName(nombre)) return { success: false, error: "No se encontró la rifa." };
+    const sheet = getOrCreatePrizesSheet(spreadsheet);
+    const lastRow = sheet.getLastRow();
+    const rows = lastRow > 1 ? sheet.getRange(2, 1, lastRow - 1, 6).getValues() : [];
+    const orden = rows.filter(row => row[1] === nombre).length + 1;
+    const imagen = savePrizeImage(nombre, imageData);
+    const id = Utilities.getUuid();
+    sheet.appendRow([id, nombre, orden, String(titulo).trim(), descripcion || "", imagen]);
+    return { success: true, premio: { id: id, sorteo: nombre, orden: orden, titulo: String(titulo).trim(), descripcion: descripcion || "", imagen: imagen } };
+  } catch (err) { return { success: false, error: err.toString() }; }
+}
+
+function deletePremio(id, token) {
+  if (token !== ADMIN_TOKEN) return { success: false, error: "Acceso no autorizado." };
+  const sheet = getOrCreatePrizesSheet();
+  const lastRow = sheet.getLastRow();
+  if (lastRow <= 1) return { success: false, error: "No se encontró el premio." };
+  const ids = sheet.getRange(2, 1, lastRow - 1, 1).getValues();
+  const index = ids.findIndex(row => row[0] === id);
+  if (index < 0) return { success: false, error: "No se encontró el premio." };
+  sheet.deleteRow(index + 2);
+  return { success: true };
+}
+
+function removePremiosSorteo(nombre) {
+  const sheet = getOrCreatePrizesSheet();
+  const lastRow = sheet.getLastRow();
+  if (lastRow <= 1) return;
+  const values = sheet.getRange(2, 1, lastRow - 1, 2).getValues();
+  for (let i = values.length - 1; i >= 0; i--) if (values[i][1] === nombre) sheet.deleteRow(i + 2);
+}
+
 function uploadPrizeImage(nombre, descripcion, imageData, token) {
   if (token !== ADMIN_TOKEN) return { success: false, error: "Acceso no autorizado." };
   try {
@@ -339,7 +423,7 @@ function listSorteos(token) {
     const detalle = sheets.map(s => {
       const nombre = s.getName();
       const cfg = configMap[nombre] || { visible: true, estado: "Activo" };
-      return { nombre: nombre, visible: cfg.visible, estado: cfg.estado, precio: cfg.precio || DEFAULT_TICKET_PRICE };
+      return { nombre: nombre, visible: cfg.visible, estado: cfg.estado, precio: cfg.precio || DEFAULT_TICKET_PRICE, descripcion: cfg.descripcion || "", imagen: cfg.imagen || "" };
     });
 
     if (isAdmin) {
@@ -506,6 +590,7 @@ function deleteSorteo(nombre, token) {
 
     spreadsheet.deleteSheet(sheet);
     removeSorteoConfig(nombre);
+    removePremiosSorteo(nombre);
     return { success: true, message: `Sorteo "${nombre}" eliminado.` };
   } catch (err) {
     return { success: false, error: err.toString() };

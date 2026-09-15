@@ -391,15 +391,19 @@ async function handleCreateSorteo(e) {
     const result = await apiCreateSorteo(nombre, cantidad, token, precio);
     if (result.success) {
       const image = document.getElementById('prize-image').files[0];
-      if (image) {
-        const data = await new Promise((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(reader.result); reader.onerror = reject; reader.readAsDataURL(image); });
-        const upload = await apiUploadPrizeImage(result.sorteo, document.getElementById('prize-description').value.trim(), data, token);
-        if (!upload.success) throw new Error(upload.error || 'No se pudo guardar la imagen.');
+      const tituloPremio = document.getElementById('prize-title').value.trim();
+      if (tituloPremio) {
+        const data = image ? await readImageAsDataUrl(image) : '';
+        const premio = await apiSavePremio(result.sorteo, tituloPremio, document.getElementById('prize-description').value.trim(), data, token);
+        if (!premio.success) throw new Error(premio.error || 'No se pudo guardar el premio.');
       }
       alert(`⚽ ${result.message}`);
       nameInput.value = '';
       countInput.value = '100';
       priceInput.value = '5000';
+      document.getElementById('prize-title').value = '';
+      document.getElementById('prize-description').value = '';
+      document.getElementById('prize-image').value = '';
       await refreshSorteosList();
       currentSorteo = result.sorteo;
       localStorage.setItem(CURRENT_SORTEO_KEY, currentSorteo);
@@ -472,6 +476,7 @@ function renderSorteoManagement() {
       <p>${esActivo ? 'Rifa abierta actualmente. Puedes registrar compradores y modificar sus números.' : 'Historial disponible en Google Sheets.'}</p>
       <div class='raffle-card-actions'>
         <button type='button' class='btn-primary' onclick='handleOpenRaffle("${s.nombre}")'>Abrir y administrar</button>
+        <button type='button' class='btn-secondary' onclick='openPrizeManager("${s.nombre}")'>🎁 Premios</button>
         <button type='button' class='btn-secondary' onclick='handleOpenDraw("${s.nombre}")'>🏆 Tirar ganadores</button>
         <button type='button' class='btn-secondary' onclick='handleSetSorteoActive("${s.nombre}", ${estaPublicado})'>${estaPublicado ? 'Desactivar público' : 'Activar público'}</button>
         <button type='button' class='btn-secondary' onclick='handleToggleEstado("${s.nombre}", "${s.estado}")'>${s.estado === 'Terminada' ? 'Reactivar' : 'Finalizar'}</button>
@@ -480,6 +485,87 @@ function renderSorteoManagement() {
     `;
     container.appendChild(card);
   });
+}
+
+function escapeHtml(value) {
+  const element = document.createElement('div');
+  element.textContent = value || '';
+  return element.innerHTML;
+}
+
+function readImageAsDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(new Error('No se pudo leer la imagen.'));
+    reader.readAsDataURL(file);
+  });
+}
+
+async function openPrizeManager(nombre) {
+  const panel = document.getElementById('prize-manager');
+  document.getElementById('prize-manager-raffle').textContent = nombre;
+  panel.dataset.sorteo = nombre;
+  panel.hidden = false;
+  panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  await refreshPremios(nombre);
+}
+
+function closePrizeManager() {
+  document.getElementById('prize-manager').hidden = true;
+}
+
+async function refreshPremios(nombre) {
+  const list = document.getElementById('prizes-list');
+  list.innerHTML = '<p class="raffle-history-empty">Cargando premios…</p>';
+  try {
+    const result = await apiListPremios(nombre);
+    const premios = result.premios || [];
+    if (!premios.length) {
+      list.innerHTML = '<p class="raffle-history-empty">Aún no hay premios. Agrega el primero aquí.</p>';
+      return;
+    }
+    list.innerHTML = premios.map(p => `<article class="prize-card">${p.imagen ? `<img src="${escapeHtml(p.imagen)}" alt="${escapeHtml(p.titulo)}">` : '<div class="prize-placeholder">🏆</div>'}<div><span>Premio ${p.orden}</span><h4>${escapeHtml(p.titulo)}</h4><p>${escapeHtml(p.descripcion) || 'Sin descripción.'}</p></div><button type="button" class="btn-secondary btn-danger" onclick="handleDeletePremio('${p.id}')">Eliminar</button></article>`).join('');
+  } catch (error) {
+    list.innerHTML = '<p class="raffle-history-empty">No se pudieron cargar los premios.</p>';
+    console.error(error);
+  }
+}
+
+async function handleSavePremio(event) {
+  event.preventDefault();
+  const panel = document.getElementById('prize-manager');
+  const nombre = panel.dataset.sorteo;
+  const titulo = document.getElementById('new-prize-title').value.trim();
+  const descripcion = document.getElementById('new-prize-description').value.trim();
+  const image = document.getElementById('new-prize-image').files[0];
+  if (!nombre || !titulo) return;
+  const button = event.currentTarget.querySelector('button[type="submit"]');
+  button.disabled = true;
+  button.classList.add('is-loading');
+  button.innerHTML = '<span class="button-spinner"></span> Guardando premio…';
+  try {
+    const result = await apiSavePremio(nombre, titulo, descripcion, image ? await readImageAsDataUrl(image) : '', getAdminToken());
+    if (!result.success) throw new Error(result.error || 'No se pudo guardar el premio.');
+    event.currentTarget.reset();
+    await refreshPremios(nombre);
+  } catch (error) {
+    alert('❌ ' + error.message);
+  } finally {
+    button.disabled = false;
+    button.classList.remove('is-loading');
+    button.textContent = 'Agregar premio';
+  }
+}
+
+async function handleDeletePremio(id) {
+  const nombre = document.getElementById('prize-manager').dataset.sorteo;
+  if (!confirm('¿Seguro que deseas eliminar este premio?')) return;
+  try {
+    const result = await apiDeletePremio(id, getAdminToken());
+    if (!result.success) throw new Error(result.error || 'No se pudo eliminar el premio.');
+    await refreshPremios(nombre);
+  } catch (error) { alert('❌ ' + error.message); }
 }
 
 /**

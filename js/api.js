@@ -254,6 +254,36 @@ async function apiUploadPrizeImage(nombre, descripcion, imagen, token) {
   return response.json();
 }
 
+async function apiListPremios(nombre) {
+  const url = getApiUrl();
+  if (!url) return { premios: JSON.parse(localStorage.getItem(`rifa_mock_premios_${nombre}`) || '[]') };
+  const response = await fetch(`${url}?action=listPremios&nombre=${encodeURIComponent(nombre)}`);
+  if (!response.ok) throw new Error('No se pudieron cargar los premios.');
+  return response.json();
+}
+
+async function apiSavePremio(nombre, titulo, descripcion, imagen, token) {
+  const url = getApiUrl();
+  if (!url) {
+    const premios = JSON.parse(localStorage.getItem(`rifa_mock_premios_${nombre}`) || '[]');
+    const premio = { id: String(Date.now()), sorteo: nombre, orden: premios.length + 1, titulo, descripcion: descripcion || '', imagen: imagen || '' };
+    premios.push(premio);
+    localStorage.setItem(`rifa_mock_premios_${nombre}`, JSON.stringify(premios));
+    return { success: true, premio };
+  }
+  const response = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ action: 'savePremio', nombre, titulo, descripcion, imagen, token }) });
+  if (!response.ok) throw new Error('No se pudo guardar el premio.');
+  return response.json();
+}
+
+async function apiDeletePremio(id, token) {
+  const url = getApiUrl();
+  if (!url) return { success: false, error: 'La eliminación de premios requiere la API configurada.' };
+  const response = await fetch(`${url}?action=deletePremio&id=${encodeURIComponent(id)}&token=${encodeURIComponent(token)}`);
+  if (!response.ok) throw new Error('No se pudo eliminar el premio.');
+  return response.json();
+}
+
 /**
  * Elimina un sorteo existente (Admin)
  */

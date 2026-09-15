@@ -106,6 +106,24 @@ async function apiDeleteSorteo(nombre, token) {
   });
 }
 
+async function apiListPremios(nombre) {
+  return new Promise((resolve, reject) => {
+    google.script.run.withSuccessHandler(resolve).withFailureHandler(reject).listPremios(nombre);
+  });
+}
+
+async function apiSavePremio(nombre, titulo, descripcion, imagen, token) {
+  return new Promise((resolve, reject) => {
+    google.script.run.withSuccessHandler(resolve).withFailureHandler(reject).savePremio(nombre, titulo, descripcion, imagen, token);
+  });
+}
+
+async function apiDeletePremio(id, token) {
+  return new Promise((resolve, reject) => {
+    google.script.run.withSuccessHandler(resolve).withFailureHandler(reject).deletePremio(id, token);
+  });
+}
+
 /**
  * Cambia la visibilidad pública de un sorteo (Admin)
  */

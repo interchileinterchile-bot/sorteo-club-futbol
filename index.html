@@ -152,7 +152,8 @@
           </div>
         </div>
         <div class='form-row'>
-          <div class='form-group'><label for='prize-description'>Descripción del premio</label><input id='prize-description' type='text' placeholder='Ej. Camiseta oficial firmada'></div>
+          <div class='form-group'><label for='prize-title'>Premio 1</label><input id='prize-title' type='text' placeholder='Ej. Camiseta oficial firmada'></div>
+          <div class='form-group'><label for='prize-description'>Descripción</label><input id='prize-description' type='text' placeholder='Ej. Talla L, firmada por el plantel'></div>
           <div class='form-group'><label for='prize-image'>Foto del premio</label><input id='prize-image' type='file' accept='image/*' capture='environment'></div>
         </div>
         <button type='submit' class='btn-primary'>Crear y abrir rifa</button>
@@ -161,6 +162,19 @@
     <div class='raffle-history-grid' id='sorteo-history-list'>
       <p class='raffle-history-empty'>Cargando historial…</p>
     </div>
+    <section id='prize-manager' class='prize-manager' hidden>
+      <div class='prize-manager-header'><div><p class='eyebrow'><span></span> Premios de la rifa</p><h3 id='prize-manager-raffle'></h3></div><button type='button' class='close-btn' aria-label='Cerrar premios' onclick='closePrizeManager()'>×</button></div>
+      <div id='prizes-list' class='prizes-list'></div>
+      <form id='new-prize-form' onsubmit='handleSavePremio(event)' class='new-prize-form'>
+        <h4>Agregar premio</h4>
+        <div class='form-row'>
+          <div class='form-group'><label for='new-prize-title'>Nombre del premio</label><input id='new-prize-title' required placeholder='Ej. Primer premio: Camiseta'></div>
+          <div class='form-group'><label for='new-prize-description'>Descripción</label><input id='new-prize-description' placeholder='Detalles del premio'></div>
+          <div class='form-group'><label for='new-prize-image'>Foto / cámara</label><input id='new-prize-image' type='file' accept='image/*' capture='environment'></div>
+        </div>
+        <button type='submit' class='btn-primary'>Agregar premio</button>
+      </form>
+    </section>
   </section>
 
   <!-- PESTAÑA 2: PANEL DE CONTABILIDAD & REGISTRO (SOLO ADMIN) -->
