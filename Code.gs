@@ -509,11 +509,6 @@ function deleteSorteo(nombre, token) {
       return { success: false, error: "El sorteo indicado no existe." };
     }
 
-    const sorteosReales = spreadsheet.getSheets().filter(s => !isSystemSheet(s.getName()));
-    if (sorteosReales.length <= 1) {
-      return { success: false, error: "No puedes eliminar el único sorteo existente." };
-    }
-
     spreadsheet.deleteSheet(sheet);
     removeSorteoConfig(nombre);
     return { success: true, message: `Sorteo "${nombre}" eliminado.` };
