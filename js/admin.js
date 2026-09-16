@@ -624,7 +624,7 @@ async function handleViewSorteoFromTable(nombre) {
   renderSorteoSelector();
   renderSorteoManagement();
   clearSelection();
-  await refreshRaffleData();
+  await refreshRaffleData(nombre);
 }
 
 async function handleOpenRaffle(nombre) {

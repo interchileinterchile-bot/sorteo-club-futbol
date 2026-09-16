@@ -10,6 +10,7 @@ let sorteosDetalle = [];       // Lista de objetos {nombre, visible, estado} (so
 let currentSorteo = null;      // Nombre del sorteo actualmente seleccionado
 let TICKET_PRICE = 5000;       // Precio del sorteo abierto, leído desde _Sorteos
 const CURRENT_SORTEO_KEY = 'rifa_current_sorteo';
+let raffleLoadSerial = 0;      // Evita que una respuesta antigua cambie la rifa abierta
 
 // Ejecutar al cargar la página
 document.addEventListener('DOMContentLoaded', () => {
@@ -101,15 +102,23 @@ function renderSorteoSelector() {
 /**
  * Refresca todos los datos del sorteo, grilla, marcador y contabilidad
  */
-async function refreshRaffleData() {
+async function refreshRaffleData(sorteoObjetivo = currentSorteo) {
+  if (!sorteoObjetivo) return;
+  const loadSerial = ++raffleLoadSerial;
   showLoading();
   try {
     const token = getAdminToken();
-    const result = await apiGetTickets(currentSorteo, token);
+    const result = await apiGetTickets(sorteoObjetivo, token);
+
+    // Si el administrador abrió otra rifa mientras esta petición estaba en
+    // tránsito, se ignora esta respuesta. Nunca se vuelve a la primera rifa.
+    if (loadSerial !== raffleLoadSerial || currentSorteo !== sorteoObjetivo) return;
 
     if (result && result.tickets) {
+      if (result.sorteo && result.sorteo !== sorteoObjetivo) {
+        throw new Error(`La API respondió "${result.sorteo}" en vez de "${sorteoObjetivo}".`);
+      }
       ticketsData = result.tickets;
-      if (result.sorteo) currentSorteo = result.sorteo;
       renderTicketsGrid();
 
       // El marcador de estadísticas es información sensible: solo se muestra en modo Admin
